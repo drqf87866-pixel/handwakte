@@ -7,6 +7,9 @@ B2B-Plattform fuer einen Heizungsbau- und Sanitaerbetrieb: Anlagenverwaltung
 - **Monteur (Mobile/PWA):** QR-Scan an der Anlage, Fotos, Serviceprotokoll,
   Unterschrift.
 
+Aktueller Stand, Demo-Daten und die naechsten Schritte stehen in
+[HANDOFF.md](HANDOFF.md).
+
 ## Stack
 
 | Baustein | Technik |
