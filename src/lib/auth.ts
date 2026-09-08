@@ -30,6 +30,11 @@ function createAuth() {
     secret: process.env.BETTER_AUTH_SECRET,
     baseURL: process.env.BETTER_AUTH_URL,
 
+    // next dev (:3000) und Worker-Preview (:8787) sind zwei verschiedene
+    // Origins. Ohne diesen Eintrag lehnt Better Auth Logins am jeweils
+    // anderen Port mit INVALID_ORIGIN ab.
+    trustedOrigins: ["http://localhost:3000", "http://localhost:8787"],
+
     emailAndPassword: {
       enabled: true,
       // MVP: Konten legt das Buero an (scripts/create-user.mts).

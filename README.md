@@ -9,7 +9,7 @@ B2B-Plattform fuer einen Heizungsbau- und Sanitaerbetrieb: Anlagenverwaltung
   Unterschrift.
 
 Aktueller Stand, Demo-Daten und die naechsten Schritte stehen in
-[HANDOFF.md](HANDOFF.md).
+`docs/BENUTZERHANDBUCH.md` (Bedienung) und `README.md` (Entwicklung).
 
 ## Stack
 
@@ -165,10 +165,15 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
 - **Folgetermin:** bleibt `naechste_wartung_am` beim Speichern leer, wird es
   aus `letzte_wartung_am` + `wartungsintervall_monate` berechnet - sonst faende
   der Scan die Anlage nie. Ein eingetragener Wert gewinnt.
-- **Mobil (`/scan`, `/anlage/[qrToken]`, `/protokoll/[jobId]`):** QR-Scan
-  (aktuell noch Stub mit Texteingabe), Anlagendetail, Protokollformular mit
-  Fotos und Unterschrift. Das Absenden ist noch ein `toast.info` - die Server
-  Action fuer `service_report` fehlt (siehe HANDOFF.md).
+- **Mobil (`/scan`, `/anlage/[qrToken]`, `/protokoll/[jobId]`):** QR-Scan per
+  Kamera (`QrScanner`: nativ per BarcodeDetector, jsQR-Fallback fuer
+  Safari/iPhone, manuelle Token-Eingabe als Ausweg), Anlagendetail, Protokollformular mit
+  Fotos und Unterschrift. Das Absenden laeuft ueber die Server Action
+  `protokollAbschliessen` in `src/app/(mobile)/protokoll/actions.ts`: Sie
+  schreibt `service_report`, verknuepft die per `/api/upload` abgelegten Fotos
+  und die Signatur, setzt den Auftrag auf `erledigt`, schreibt letzte und
+  naechste Wartung fort und stoesst die Kundenbestaetigung
+  (`sendServiceReportEmail`, best effort) an.
 - **Dateien:** Upload als Proxy ueber `/api/upload` nach R2 plus Metadaten in
   `attachment`, Auslieferung geschuetzt ueber `/api/files/*`.
 
@@ -213,7 +218,7 @@ src/
       kunden/               Liste, neu, [id], [id]/bearbeiten + actions.ts
       anlagen/              Liste, neu, [id], [id]/bearbeiten, [id]/qr + actions.ts
     (mobile)/               Monteur-Ansichten (eigenes Layout + Bottom-Nav)
-      scan                  QR-Scan (Stub mit Texteingabe)
+      scan                  QR-Scan (Kamera + Texteingabe-Fallback)
       anlage/[qrToken]      Anlagendetail per QR-Token
       protokoll/[jobId]     Serviceprotokoll zum Auftrag
     api/
@@ -263,6 +268,9 @@ scripts/create-user.mts     Benutzer anlegen (CLI, siehe Deployment)
 - **Lazy Clients.** `getDb()`, `getAuth()` und `getResend()` bauen ihre Instanz
   erst beim ersten Zugriff auf, damit fehlende Env-Variablen als sauberer
   Fehler in `/api/health` landen statt beim Modul-Import.
+- **Trusted Origins fuer beide Dev-Ports.** `src/lib/auth.ts` vertraut
+  `localhost:3000` (next dev) und `localhost:8787` (Worker-Preview) - sonst
+  scheitert der Login am jeweils anderen Port mit `INVALID_ORIGIN`.
 - **Jede Server Action ruft selbst `requireSession()`.** Actions sind eigene
   POST-Endpunkte; der Guard im Layout schuetzt nur das Rendern der Seite.
 - **Server Actions nicht im Render einer Client-Komponente binden.**
@@ -270,3 +278,16 @@ scripts/create-user.mts     Benutzer anlegen (CLI, siehe Deployment)
   Prop uebergeben. Beim Binden im Client-Render entsteht pro Durchlauf eine
   neue Action-Referenz; gibt die Action dann einen Fehlerzustand zurueck statt
   zu redirecten, antwortet der Server nicht mehr.
+- **Protokoll-Abschluss ist best effort bei der Mail, strikt bei den Daten.**
+  `protokollAbschliessen` arbeitet in fester Reihenfolge (Report, dann
+  Attachment-Verknuepfung, Job-Status, Folgetermin); fruehe Fehler brechen mit
+  Feldmeldung ab, damit nichts halb Fertiges redirectet. Die
+  Kundenbestaetigung per Resend wird nur geloggt, wenn sie scheitert - ohne
+  verifizierte Domain waere die Funktion in dev sonst unbenutzbar.
+- **Folgetermin: Handarbeit schlaegt Automatik.** Nach einem Protokoll wird
+  `naechsteWartungAm` auf `max(durchgefuehrtAm + Intervall, bestehender
+  manueller Termin)` gesetzt - ein vom Buero bewusst weiter nach hinten gelegter
+  Termin bleibt also bestehen.
+- **Spontanprotokoll uebernimmt offenen Auftrag.** Wird `/protokoll/neu` ohne
+  Job aufgerufen, obwohl ein offener Auftrag an der Anlage haengt, wird der
+  frueheste uebernommen und mit abgeschlossen statt als Karteileiche zu bleiben.

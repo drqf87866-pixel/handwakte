@@ -2,7 +2,7 @@
 
 Stand: September 2026. Dieses Handbuch richtet sich an alle, die mit der Anwendung arbeiten — im Büro am Rechner und als Monteur vor Ort.
 
-Bitte beachten Sie: Die Anwendung befindet sich im Aufbau. Zwei Funktionen sind noch Platzhalter und werden im Handbuch jeweils klar gekennzeichnet: der Kamera-Scan und das endgültige Speichern des Protokolls.
+Bitte beachten Sie: Die Anwendung befindet sich im Aufbau. Details zu Funktionen, die noch ausgebaut werden (z. B. Offline-Nutzung im Keller ohne Empfang), nennt das jeweilige Kapitel.
 
 ## Inhalt
 
@@ -303,12 +303,11 @@ Der Aufkleber ist bewusst klein gehalten (Karte in Visitenkartengröße) und ent
 
 Rufen Sie auf dem Handy **Scannen** (`/scan`) auf. Die Seite heißt **„Anlage scannen"** mit dem Untertitel „QR-Code am Kessel scannen, um die Bauakte zu öffnen."
 
-Aktueller Stand: Die Seite zeigt oben eine gestrichelte Karte **„Kamera-Vorschau"** mit dem Hinweis **„folgt in der Feature-Phase"**. Der echte Kamera-Scan ist also noch nicht eingebaut. Gehen Sie daher so vor:
+1. Tippen Sie auf **„Kamera starten"** und erlauben Sie den Kamera-Zugriff, falls der Browser fragt.
+2. Halten Sie den QR-Code des Aufklebers ins markierte Bildfeld — die Bauakte öffnet sich automatisch (`/anlage/<Token>`).
+3. Klappt es nicht (verweigerte Berechtigung, kein Empfang für die Erkennung ist nicht nötig — sie läuft auf dem Gerät —, oder altes Handy), tippen Sie den **Code vom Aufkleber** unten von Hand ein und tippen Sie auf **„Anlage öffnen"**.
 
-1. Lesen Sie den **Code vom Aufkleber** ab (Beispiel: `a1b2c3d4`). Das Eingabefeld heißt genau so.
-2. Tippen Sie den Code exakt ab (Groß-/Kleinschreibung beachten, keine Leerzeichen am Anfang oder Ende).
-3. Tippen Sie auf **„Anlage öffnen"** (die Schaltfläche ist erst aktiv, wenn etwas eingetippt ist).
-4. Ergebnis: Sie landen auf der Bauakte dieser Anlage (`/anlage/<Token>`).
+Fremde QR-Codes (z. B. WLAN-Codes) werden ignoriert — der Scan läuft einfach weiter.
 
 Unten in der Handy-Navigation kommen Sie über **Start** zurück zur Auswahl und über **Aufträge** zur Liste der offenen Wartungen.
 
@@ -375,13 +374,15 @@ Die Karte **„Unterschrift Kunde"** enthält:
 
 Klappt das Speichern nicht, erscheint z. B. „Unterschrift konnte nicht gespeichert werden" — prüfen Sie dann Ihre Internetverbindung und versuchen Sie es erneut.
 
-### 9.4 Abschließen — wichtiger Hinweis zum aktuellen Stand
+### 9.4 Abschließen
 
-Ganz unten steht die große Schaltfläche **„Protokoll abschließen"**.
+Ganz unten steht die große Schaltfläche **„Protokoll abschließen"**. Tippen Sie darauf, wenn Messwerte, Fotos und Unterschrift vollständig sind:
 
-Bitte beachten Sie: Das endgültige Speichern des Protokolls ist **noch nicht fertig**. Derzeit erscheint nach dem Tippen lediglich der Hinweis **„Speichern folgt in der Feature-Phase"**. Messwerte gehen dabei nicht verloren, solange Sie die Seite nicht verlassen — sie werden aber auch noch nicht als offizielles Protokoll abgelegt.
+1. Während des Speicherns steht dort „Wird gespeichert …".
+2. Ergebnis: Das Protokoll wird als offizieller Servicebericht abgelegt, der Auftrag auf „Erledigt" gesetzt, die nächste Wartung um das Intervall fortgeschrieben und Sie landen zurück in der Bauakte der Anlage.
+3. Das Büro sieht den Bericht unter **Anlagen → Anlage → Protokolle**, der Auftrag verschwindet aus der Übersicht der offenen Wartungen. Hat der Kunde eine E-Mail-Adresse hinterlegt, erhält er automatisch eine Bestätigung.
 
-Geplant ist: Beim Abschließen wird ein Servicebericht geschrieben, der Auftrag auf „Erledigt" gesetzt, die nächste Wartung um das Intervall fortgeschrieben und eine Bestätigungsmail ausgelöst. Bis dahin dokumentieren Sie Fotos und Unterschrift wie oben beschrieben und melden den Abschluss wie bisher zusätzlich dem Büro.
+Haben Sie den Einsatz ohne vorherigen Auftrag begonnen („Spontaner Serviceeinsatz"), wird ein gleichzeitig offener Auftrag derselben Anlage automatisch mit abgeschlossen — so bleibt keine Karteileiche im Dashboard zurück.
 
 Sonderfall: Steht dort **„Keine Anlage gewählt. Bitte zuerst den QR-Code an der Anlage scannen."**, wurde die Seite ohne Anlage aufgerufen. Gehen Sie dann zurück zu **Scannen** und öffnen Sie die Anlage erneut über ihren Token.
 
@@ -405,7 +406,7 @@ Empfohlener Übungsablauf:
 2. Öffnen Sie als Büro die **Übersicht** und merken Sie sich, welche der drei Anlagen dort auftaucht und welche nicht.
 3. Wechseln Sie aufs Handy (oder ein schmales Browserfenster), rufen Sie **Scannen** auf und tippen Sie nacheinander `demo1234`, `demo5678` und `demo9012` ein.
 4. Prüfen Sie jeweils Markierung, Stammdaten und nächste Wartung.
-5. Nehmen Sie bei `demo1234` ein Testfoto auf und öffnen Sie das Protokoll bis zum Hinweis „Speichern folgt in der Feature-Phase".
+5. Nehmen Sie bei `demo1234` ein Testfoto auf, füllen Sie das Protokoll aus und schließen Sie es ab. Prüfen Sie danach im Büro, dass der Auftrag aus der Übersicht verschwunden und das Protokoll in der Anlage erschienen ist.
 6. Öffnen Sie im Büro die Anlage „Gas-Brennwertkessel Haus A" und prüfen Sie Wartungsaufträge und Protokolle.
 
 Falls die Demo-Daten fehlen (z. B. nach einem Datenbank-Neuaufbau), wenden Sie sich an Ihren Administrator — sie werden per Skript eingespielt, nicht über die Oberfläche.
@@ -468,9 +469,9 @@ Prüfen Sie Ihre Internetverbindung (gerade im Keller oft schwach). Versuchen Si
 
 Die Schaltfläche **„Übernehmen"** bleibt deaktiviert, solange das Feld leer ist — unterschreiben Sie zuerst. Erscheint „Unterschrift konnte nicht gespeichert werden", prüfen Sie die Verbindung und versuchen Sie es erneut.
 
-**„Protokoll abschließen" tut scheinbar nichts.**
+**„Protokoll abschließen" meldet einen Fehler.**
 
-Das ist der bekannte Platzhalter: Es erscheint nur „Speichern folgt in der Feature-Phase". Fotos und Unterschrift sind trotzdem wie in Kapitel 9 beschrieben gespeichert. Melden Sie den Abschluss zusätzlich dem Büro, bis das endgültige Speichern freigegeben ist.
+Lesen Sie die Meldung über dem Formular: Feldfehler (z. B. keine Zahl bei den Messwerten) sind direkt am Feld markiert. Bei „Auftrag nicht gefunden" oder „bereits abgeschlossen" hat sich der Auftragsstand geändert — kehren Sie zur Bauakte zurück und öffnen Sie das Protokoll erneut. Ihre Fotos und die Unterschrift sind bereits gespeichert und gehen dabei nicht verloren.
 
 **QR-Aufkleber sieht beim Drucken falsch aus.**
 
@@ -499,4 +500,4 @@ Prüfen Sie Spam-Ordner und ob das richtige Büropostfach hinterlegt ist. Hinwei
 
 ---
 
-*Technische Details (Installation, Datenbank, E-Mail-Einrichtung, Deployment) stehen nicht in diesem Handbuch, sondern in `README.md` und `HANDOFF.md` für Administratoren und Entwickler.*
+*Technische Details (Installation, Datenbank, E-Mail-Einrichtung, Deployment) stehen nicht in diesem Handbuch, sondern in `README.md` für Administratoren und Entwickler.*
