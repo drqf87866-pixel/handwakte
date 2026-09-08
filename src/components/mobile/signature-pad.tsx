@@ -85,7 +85,7 @@ export function SignaturePad({ onSign, height = 200 }: SignaturePadProps) {
         ref={canvasRef}
         width={600}
         height={height}
-        className="bg-background w-full touch-none rounded-md border"
+        className="bg-card w-full touch-none rounded-xl border shadow-xs"
         style={{ height }}
         onPointerDown={start}
         onPointerMove={move}
@@ -94,10 +94,10 @@ export function SignaturePad({ onSign, height = 200 }: SignaturePadProps) {
       />
       <div className="flex gap-2">
         <Button type="button" variant="outline" className="flex-1" onClick={leeren}>
-          Loeschen
+          Löschen
         </Button>
         <Button type="button" className="flex-1" disabled={leer} onClick={uebernehmen}>
-          Uebernehmen
+          Übernehmen
         </Button>
       </div>
     </div>

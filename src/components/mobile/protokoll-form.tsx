@@ -24,9 +24,13 @@ export type ProtokollFormProps = {
 export function ProtokollForm({ jobId, installationId }: ProtokollFormProps) {
   if (!installationId) {
     return (
-      <p className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
-        Keine Anlage gewaehlt. Bitte zuerst den QR-Code an der Anlage scannen.
-      </p>
+      <Card size="sm">
+        <CardContent>
+          <p className="text-muted-foreground text-sm">
+            Keine Anlage gewählt. Bitte zuerst den QR-Code an der Anlage scannen.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -103,8 +107,8 @@ export function ProtokollForm({ jobId, installationId }: ProtokollFormProps) {
         </CardContent>
       </Card>
 
-      <Button type="submit" className="w-full">
-        Protokoll abschliessen
+      <Button type="submit" size="lg" className="w-full">
+        Protokoll abschließen
       </Button>
     </form>
   );

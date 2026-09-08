@@ -20,8 +20,8 @@ export default async function ProtokollPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Serviceprotokoll</h1>
-        <p className="text-muted-foreground text-sm">
+        <h1 className="text-xl font-semibold tracking-tight">Serviceprotokoll</h1>
+        <p className="text-muted-foreground mt-0.5 text-sm">
           {jobId === "neu" ? "Spontaner Serviceeinsatz" : `Auftrag ${jobId}`}
         </p>
       </div>

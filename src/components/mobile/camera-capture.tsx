@@ -72,7 +72,7 @@ export function CameraCapture({ installationId, reportId, onUploaded }: CameraCa
         onClick={() => inputRef.current?.click()}
       >
         <Camera />
-        {pending ? "Wird hochgeladen..." : "Foto aufnehmen"}
+        {pending ? "Wird hochgeladen …" : "Foto aufnehmen"}
       </Button>
     </>
   );

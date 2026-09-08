@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Flame } from "lucide-react";
 import { toast } from "sonner";
 
 import { signIn } from "@/lib/auth-client";
@@ -44,10 +45,13 @@ export function LoginForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Anmelden</CardTitle>
-        <CardDescription>Zugang zur digitalen Bauakte</CardDescription>
+    <Card className="shadow-md">
+      <CardHeader className="items-center text-center">
+        <span className="bg-primary text-primary-foreground flex size-11 items-center justify-center rounded-2xl shadow-xs">
+          <Flame className="size-5" />
+        </span>
+        <CardTitle className="text-xl">Willkommen zurück</CardTitle>
+        <CardDescription>Melden Sie sich an, um fortzufahren.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -59,6 +63,7 @@ export function LoginForm() {
               type="email"
               autoComplete="username"
               inputMode="email"
+              placeholder="name@betrieb.de"
               required
             />
           </div>
@@ -72,8 +77,8 @@ export function LoginForm() {
               required
             />
           </div>
-          <Button type="submit" disabled={pending}>
-            {pending ? "Wird geprueft..." : "Anmelden"}
+          <Button type="submit" disabled={pending} className="mt-1 w-full" size="lg">
+            {pending ? "Wird geprüft …" : "Anmelden"}
           </Button>
         </form>
       </CardContent>

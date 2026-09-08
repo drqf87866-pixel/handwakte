@@ -32,7 +32,9 @@ function createAuth() {
 
     emailAndPassword: {
       enabled: true,
-      // MVP: Konten legt das Buero an, keine Selbstregistrierung per Mail-Link.
+      // MVP: Konten legt das Buero an (scripts/create-user.mts).
+      // Ohne disableSignUp waere POST /api/auth/sign-up/email oeffentlich.
+      disableSignUp: true,
       requireEmailVerification: false,
       minPasswordLength: 10,
     },

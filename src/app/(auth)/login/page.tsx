@@ -11,6 +11,9 @@ export default function LoginPage() {
       <Suspense>
         <LoginForm />
       </Suspense>
+      <p className="text-muted-foreground mt-6 text-center text-xs">
+        Digitale Bauakte · Heizungsbau &amp; Sanitär
+      </p>
     </main>
   );
 }

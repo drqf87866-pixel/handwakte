@@ -6,11 +6,11 @@ export default async function DashboardLayout({ children }: LayoutProps<"/">) {
   const session = await requireSession("/dashboard");
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex min-h-full flex-1 flex-col">
       <AppHeader user={session.user} />
-      <div className="flex flex-1 flex-col md:flex-row">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 md:flex-row md:gap-6 md:px-8 md:py-8">
         <Sidebar />
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
   );

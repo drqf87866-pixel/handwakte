@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { Camera, ClipboardList } from "lucide-react";
 
 import { CameraCapture } from "@/components/mobile/camera-capture";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { customer, getDb, installation } from "@/lib/db";
@@ -39,22 +41,32 @@ export default async function AnlagePage({ params }: PageProps<"/anlage/[qrToken
 
   if (!anlage) notFound();
 
+  const ueberfaellig =
+    anlage.naechsteWartungAm !== null && anlage.naechsteWartungAm < new Date();
+
   const stammdaten: Array<[string, string]> = [
     ["Kunde", anlage.kunde],
-    ["Hersteller", anlage.hersteller ?? "-"],
-    ["Modell", anlage.modell ?? "-"],
-    ["Serien-Nr.", anlage.serienNr ?? "-"],
-    ["Baujahr", anlage.baujahr ? String(anlage.baujahr) : "-"],
-    ["Standort", anlage.standort ?? "-"],
-    ["Letzte Wartung", anlage.letzteWartungAm ? dateFmt.format(anlage.letzteWartungAm) : "-"],
-    ["Naechste Wartung", anlage.naechsteWartungAm ? dateFmt.format(anlage.naechsteWartungAm) : "-"],
+    ["Hersteller", anlage.hersteller ?? "–"],
+    ["Modell", anlage.modell ?? "–"],
+    ["Serien-Nr.", anlage.serienNr ?? "–"],
+    ["Baujahr", anlage.baujahr ? String(anlage.baujahr) : "–"],
+    ["Standort", anlage.standort ?? "–"],
+    ["Letzte Wartung", anlage.letzteWartungAm ? dateFmt.format(anlage.letzteWartungAm) : "–"],
+    ["Nächste Wartung", anlage.naechsteWartungAm ? dateFmt.format(anlage.naechsteWartungAm) : "–"],
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">{anlage.bezeichnung}</h1>
-        <p className="text-muted-foreground text-sm">{anlage.kunde}</p>
+        <p className="mb-2">
+          {ueberfaellig ? (
+            <Badge variant="destructive">Wartung überfällig</Badge>
+          ) : (
+            <Badge variant="secondary">Bauakte</Badge>
+          )}
+        </p>
+        <h1 className="text-xl font-semibold tracking-tight">{anlage.bezeichnung}</h1>
+        <p className="text-muted-foreground mt-0.5 text-sm">{anlage.kunde}</p>
       </div>
 
       <Card>
@@ -62,23 +74,31 @@ export default async function AnlagePage({ params }: PageProps<"/anlage/[qrToken
           <CardTitle className="text-base">Stammdaten</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 text-sm">
             {stammdaten.map(([label, value]) => (
               <div key={label} className="contents">
                 <dt className="text-muted-foreground">{label}</dt>
-                <dd>{value}</dd>
+                <dd className="text-right">{value}</dd>
               </div>
             ))}
           </dl>
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         <CameraCapture installationId={anlage.id} />
-        <Button asChild className="w-full">
-          <Link href={`/protokoll/neu?installation=${anlage.id}`}>Protokoll ausfuellen</Link>
+        <Button asChild className="w-full" size="lg">
+          <Link href={`/protokoll/neu?installation=${anlage.id}`}>
+            <ClipboardList />
+            Protokoll ausfüllen
+          </Link>
         </Button>
       </div>
+
+      <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+        <Camera className="size-3.5" />
+        Fotos werden direkt der Bauakte zugeordnet.
+      </p>
     </div>
   );
 }

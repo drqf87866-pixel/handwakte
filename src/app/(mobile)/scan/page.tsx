@@ -10,9 +10,9 @@ export default function ScanPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Anlage scannen</h1>
-        <p className="text-muted-foreground text-sm">
-          QR-Code am Kessel scannen, um die Bauakte zu oeffnen.
+        <h1 className="text-xl font-semibold tracking-tight">Anlage scannen</h1>
+        <p className="text-muted-foreground mt-0.5 text-sm">
+          QR-Code am Kessel scannen, um die Bauakte zu öffnen.
         </p>
       </div>
 
