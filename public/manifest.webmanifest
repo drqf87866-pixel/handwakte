@@ -1,0 +1,19 @@
+{
+  "name": "Digitale Bauakte",
+  "short_name": "Bauakte",
+  "description": "Anlagenverwaltung und Wartungsplaner fuer Heizungsbau & Sanitaer",
+  "lang": "de",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

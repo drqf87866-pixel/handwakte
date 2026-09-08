@@ -1,0 +1,34 @@
+/**
+ * Cloudflare Worker Konfiguration (OpenNext Adapter).
+ * Docs: https://opennext.js.org/cloudflare
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "handwakte",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  // Fotos, Signaturen und PDFs der digitalen Bauakte.
+  "r2_buckets": [
+    {
+      "binding": "MY_BUCKET",
+      "bucket_name": "handwakte-media",
+      "preview_bucket_name": "handwakte-media-dev"
+    }
+  ],
+
+  // Taeglicher Wartungs-Scan um 06:00 UTC -> scheduled() in src/worker.ts
+  "triggers": {
+    "crons": ["0 6 * * *"]
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

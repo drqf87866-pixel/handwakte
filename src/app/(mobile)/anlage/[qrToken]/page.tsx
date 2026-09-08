@@ -1,0 +1,84 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { eq } from "drizzle-orm";
+
+import { CameraCapture } from "@/components/mobile/camera-capture";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { customer, getDb, installation } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
+
+const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeZone: "Europe/Berlin" });
+
+async function ladeAnlage(qrToken: string) {
+  const [row] = await getDb()
+    .select({
+      id: installation.id,
+      bezeichnung: installation.bezeichnung,
+      hersteller: installation.hersteller,
+      modell: installation.modell,
+      serienNr: installation.serienNr,
+      baujahr: installation.baujahr,
+      standort: installation.standort,
+      letzteWartungAm: installation.letzteWartungAm,
+      naechsteWartungAm: installation.naechsteWartungAm,
+      kunde: customer.name,
+    })
+    .from(installation)
+    .innerJoin(customer, eq(customer.id, installation.customerId))
+    .where(eq(installation.qrToken, qrToken))
+    .limit(1);
+
+  return row;
+}
+
+export default async function AnlagePage({ params }: PageProps<"/anlage/[qrToken]">) {
+  const { qrToken } = await params;
+  const anlage = await ladeAnlage(qrToken);
+
+  if (!anlage) notFound();
+
+  const stammdaten: Array<[string, string]> = [
+    ["Kunde", anlage.kunde],
+    ["Hersteller", anlage.hersteller ?? "-"],
+    ["Modell", anlage.modell ?? "-"],
+    ["Serien-Nr.", anlage.serienNr ?? "-"],
+    ["Baujahr", anlage.baujahr ? String(anlage.baujahr) : "-"],
+    ["Standort", anlage.standort ?? "-"],
+    ["Letzte Wartung", anlage.letzteWartungAm ? dateFmt.format(anlage.letzteWartungAm) : "-"],
+    ["Naechste Wartung", anlage.naechsteWartungAm ? dateFmt.format(anlage.naechsteWartungAm) : "-"],
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold tracking-tight">{anlage.bezeichnung}</h1>
+        <p className="text-muted-foreground text-sm">{anlage.kunde}</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Stammdaten</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            {stammdaten.map(([label, value]) => (
+              <div key={label} className="contents">
+                <dt className="text-muted-foreground">{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-2">
+        <CameraCapture installationId={anlage.id} />
+        <Button asChild className="w-full">
+          <Link href={`/protokoll/neu?installation=${anlage.id}`}>Protokoll ausfuellen</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}

@@ -1,3 +1,11 @@
+# Kein symlink-basiertes node_modules: OpenNext folgt beim Bundling den
+# .nft.json-Traces und legt fuer jeden Symlink einen neuen an. Das scheitert
+# auf Windows ohne aktivierten Entwicklermodus (EPERM). Mit "hoisted" liegen
+# echte Verzeichnisse im node_modules und die Dateien werden schlicht kopiert.
+nodeLinker: hoisted
+
 allowBuilds:
+  esbuild: true
   sharp: false
   unrs-resolver: false
+  workerd: true

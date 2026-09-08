@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Von Wrangler generiert (`pnpm cf-typegen`) bzw. von OpenNext gebaut.
+    "worker-configuration.d.ts",
+    ".open-next/**",
+    ".wrangler/**",
   ]),
 ]);
 
