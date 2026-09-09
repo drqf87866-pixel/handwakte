@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { asc, eq, inArray } from "drizzle-orm";
 import { AlertTriangle, CalendarClock, ClipboardList } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -12,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { customer, getDb, installation, maintenanceJob } from "@/lib/db";
+import { customer, getDb, installation, maintenanceJob, user } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Übersicht" };
 export const dynamic = "force-dynamic";
@@ -39,26 +41,38 @@ function relativerAbstand(faelligAm: Date, jetzt: number): string {
   return `in ${tage} Tagen`;
 }
 
+const FILTER = [
+  { wert: "alle", label: "Alle" },
+  { wert: "geplant", label: "Geplant" },
+  { wert: "terminiert", label: "Terminiert" },
+  { wert: "ueberfaellig", label: "Überfällig" },
+] as const;
+
 /** Offene Wartungsaufträge, die der Cron-Lauf angelegt hat. */
 async function ladeOffeneAuftraege() {
   return getDb()
     .select({
       id: maintenanceJob.id,
       faelligAm: maintenanceJob.faelligAm,
+      terminAm: maintenanceJob.terminAm,
       status: maintenanceJob.status,
       anlage: installation.bezeichnung,
-      standort: installation.standort,
       kunde: customer.name,
+      monteur: user.name,
     })
     .from(maintenanceJob)
     .innerJoin(installation, eq(installation.id, maintenanceJob.installationId))
     .innerJoin(customer, eq(customer.id, installation.customerId))
+    .leftJoin(user, eq(user.id, maintenanceJob.monteurId))
     .where(inArray(maintenanceJob.status, ["geplant", "terminiert", "ueberfaellig"]))
     .orderBy(asc(maintenanceJob.faelligAm))
     .limit(50);
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
+  const { status } = await searchParams;
+  const filter = typeof status === "string" && status !== "alle" ? status : "alle";
+
   let auftraege: Awaited<ReturnType<typeof ladeOffeneAuftraege>> = [];
   let fehler: string | null = null;
 
@@ -68,6 +82,8 @@ export default async function DashboardPage() {
     // Ohne konfigurierte Datenbank soll die Seite trotzdem rendern.
     fehler = error instanceof Error ? error.message : String(error);
   }
+
+  const gefiltert = filter === "alle" ? auftraege : auftraege.filter((a) => a.status === filter);
 
   const jetzt = new Date().getTime();
   const ueberfaellig = auftraege.filter((a) => a.status === "ueberfaellig").length;
@@ -125,35 +141,53 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {FILTER.map(({ wert, label }) =>
+          filter === wert ? (
+            <Button key={wert} variant="default" size="sm" disabled>
+              {label}
+            </Button>
+          ) : (
+            <Button key={wert} variant="outline" size="sm" asChild>
+              <Link href={wert === "alle" ? "/dashboard" : `/dashboard?status=${wert}`}>
+                {label}
+              </Link>
+            </Button>
+          ),
+        )}
+      </div>
+
       {fehler ? (
         <Card size="sm">
           <CardContent>
             <p className="text-destructive text-sm">Datenbank nicht erreichbar: {fehler}</p>
           </CardContent>
         </Card>
-      ) : auftraege.length === 0 ? (
+      ) : gefiltert.length === 0 ? (
         <Card size="sm">
           <CardContent>
             <p className="text-muted-foreground text-sm">
-              Aktuell keine offenen Wartungsaufträge. Sobald der tägliche Scan fällige Anlagen
-              findet, erscheinen sie hier.
+              {auftraege.length === 0
+                ? "Aktuell keine offenen Wartungsaufträge. Sobald der tägliche Scan fällige Anlagen findet, erscheinen sie hier."
+                : "Kein Auftrag mit diesem Status. Filter oben zurücksetzen, um alle zu sehen."}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <Card className="gap-0 py-0">
+        <Card className="gap-0 overflow-x-auto py-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Fällig</TableHead>
                 <TableHead>Kunde</TableHead>
                 <TableHead>Anlage</TableHead>
-                <TableHead>Standort</TableHead>
+                <TableHead>Termin</TableHead>
+                <TableHead>Monteur</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {auftraege.map((a) => (
+              {gefiltert.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell className="whitespace-nowrap">
                     <span className="font-medium">{dateFmt.format(a.faelligAm)}</span>{" "}
@@ -162,8 +196,18 @@ export default async function DashboardPage() {
                     </span>
                   </TableCell>
                   <TableCell>{a.kunde}</TableCell>
-                  <TableCell>{a.anlage}</TableCell>
-                  <TableCell className="text-muted-foreground">{a.standort ?? "–"}</TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/dashboard/${a.id}`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {a.anlage}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
+                    {a.terminAm ? dateFmt.format(a.terminAm) : "–"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{a.monteur ?? "–"}</TableCell>
                   <TableCell>
                     <Badge
                       variant={

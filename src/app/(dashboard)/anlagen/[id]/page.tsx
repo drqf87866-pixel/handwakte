@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { customer, getDb, installation, maintenanceJob, serviceReport } from "@/lib/db";
+import { customer, getDb, installation, maintenanceJob, serviceReport, user } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Anlage" };
 export const dynamic = "force-dynamic";
@@ -63,8 +63,10 @@ async function ladeAuftraege(anlageId: string) {
       faelligAm: maintenanceJob.faelligAm,
       terminAm: maintenanceJob.terminAm,
       status: maintenanceJob.status,
+      monteur: user.name,
     })
     .from(maintenanceJob)
+    .leftJoin(user, eq(user.id, maintenanceJob.monteurId))
     .where(eq(maintenanceJob.installationId, anlageId))
     .orderBy(desc(maintenanceJob.faelligAm))
     .limit(10);
@@ -217,16 +219,25 @@ export default async function AnlageDetailPage({ params }: PageProps<"/anlagen/[
                 <TableRow>
                   <TableHead>Fällig</TableHead>
                   <TableHead>Termin</TableHead>
+                  <TableHead>Monteur</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {auftraege.map((a) => (
                   <TableRow key={a.id}>
-                    <TableCell className="whitespace-nowrap">{dateFmt.format(a.faelligAm)}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Link
+                        href={`/dashboard/${a.id}`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {dateFmt.format(a.faelligAm)}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
                       {a.terminAm ? dateFmt.format(a.terminAm) : "–"}
                     </TableCell>
+                    <TableCell className="text-muted-foreground">{a.monteur ?? "–"}</TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[a.status] ?? "secondary"}>
                         {STATUS_LABEL[a.status] ?? a.status}

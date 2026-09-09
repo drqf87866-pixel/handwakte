@@ -90,12 +90,15 @@ Drei Karten zeigen auf einen Blick:
 
 ### 3.2 Tabelle der Aufträge
 
+Über der Tabelle stehen vier Filter-Schaltflächen: **Alle**, **Geplant**, **Terminiert**, **Überfällig**. Damit grenzen Sie die Liste ein, ohne dass die Kennzahlen oben sich ändern.
+
 Darunter steht die Tabelle mit den Spalten:
 
 - **Fällig** — Datum plus relative Angabe wie „heute", „morgen", „in 10 Tagen", „seit 3 Tagen" oder „seit gestern".
 - **Kunde**
-- **Anlage**
-- **Standort** (oder „–", falls keiner gepflegt ist)
+- **Anlage** (anklickbar — führt zur Auftragsdetailseite, siehe Kapitel 3.3)
+- **Termin** — vereinbarter Termin (oder „–", falls noch keiner vergeben ist)
+- **Monteur** — zugeteilte Person (oder „–")
 - **Status** als farbige Markierung:
   - **Überfällig** (rot)
   - **Geplant** (grau)
@@ -103,7 +106,22 @@ Darunter steht die Tabelle mit den Spalten:
 
 Die Liste ist nach Fälligkeit sortiert und zeigt maximal 50 Einträge.
 
-### 3.3 Sonderfälle
+### 3.3 Auftrag öffnen, terminieren und stornieren
+
+Klicken Sie in der Tabelle auf die **Anlage**, um die Auftragsdetailseite zu öffnen. Oben stehen Status, Anlage und Kunde (beide anklickbar), darunter die Karte **„Details"** mit Fälligkeit, Termin, Monteur, Standort und Notiz sowie — bei offenen Aufträgen — die Schaltfläche **„Protokoll ausfüllen"**.
+
+Darunter finden Sie die Karte **„Termin vergeben"**:
+
+1. Tragen Sie den **Termin** ein (Pflichtfeld).
+2. Wählen Sie optional einen **Monteur** aus („Noch nicht zugeteilt", falls noch offen).
+3. Ergänzen Sie bei Bedarf eine **Notiz** (z. B. Zufahrt, Ansprechpartner vor Ort).
+4. Klicken Sie auf **„Termin speichern"** („Wird gespeichert …" währenddessen). Der Auftrag steht danach auf **Terminiert**. Bereits terminierte Aufträge lassen sich hier erneut umbuchen — einfach neues Datum eintragen und wieder speichern.
+
+Ganz unten steht bei offenen Aufträgen die Karte zum **Stornieren** (z. B. bei Doppelanlage oder beendeter Betreuung): Nach der Rückfrage „Auftrag wirklich stornieren?" steht der Auftrag auf **Storniert**. Er bleibt in der Anlagen-Historie sichtbar, zählt aber nicht mehr als offen — ist die Wartung weiterhin fällig, legt der tägliche Scan beim nächsten Lauf einen neuen Auftrag an.
+
+Erledigte und stornierte Aufträge lassen sich nicht mehr terminieren oder stornieren; die Seite zeigt dann stattdessen einen Hinweis. Ganz unten stehen die **Protokolle zu diesem Auftrag**.
+
+### 3.4 Sonderfälle
 
 - **„Aktuell keine offenen Wartungsaufträge."** — Es ist nichts zu tun. Sobald der tägliche Scan fällige Anlagen findet, erscheinen sie hier automatisch.
 - **„Datenbank nicht erreichbar: …"** — Die Anwendung kann die Datenbank gerade nicht lesen. Warten Sie kurz und laden Sie neu. Hilft das nicht, wenden Sie sich an Ihren Administrator (siehe auch Kapitel 12).
@@ -249,7 +267,7 @@ Darunter sehen Sie zwei Karten:
 
 Ganz unten stehen zwei Verläufe (jeweils die letzten 10 Einträge):
 
-- **Wartungsaufträge** mit Fällig, Termin und Status (**Überfällig**, **Geplant**, **Terminiert**, **Erledigt**, **Storniert**). Gibt es noch keine, steht dort: „Noch keine Aufträge. Der tägliche Scan legt sie an, sobald die nächste Wartung innerhalb des Vorlaufs liegt."
+- **Wartungsaufträge** mit Fällig, Termin, Monteur und Status (**Überfällig**, **Geplant**, **Terminiert**, **Erledigt**, **Storniert**). Das Fälligkeitsdatum ist anklickbar und führt zur Auftragsdetailseite (siehe Kapitel 3.3). Gibt es noch keine, steht dort: „Noch keine Aufträge. Der tägliche Scan legt sie an, sobald die nächste Wartung innerhalb des Vorlaufs liegt."
 - **Protokolle** mit Durchgeführt, Tätigkeiten und Mängeln. Gibt es noch keine, steht dort: „Noch keine Serviceprotokolle erfasst."
 
 Ist die Anlage deaktiviert, erscheint zusätzlich der Hinweis: „Diese Anlage ist deaktiviert und wird vom täglichen Wartungs-Scan übersprungen."
@@ -459,7 +477,7 @@ Es ist weder eine nächste noch eine letzte Wartung eingetragen. Tragen Sie im B
 
 **Ein Auftrag taucht nicht in der Übersicht auf.**
 
-Mögliche Ursachen in dieser Reihenfolge prüfen: 1) Anlage ist **inaktiv** → aktivieren. 2) Nächste Wartung liegt **mehr als 30 Tage** in der Zukunft (wie Demo-Fall `demo5678`) → noch abwarten. 3) Es gibt gar kein Fälligkeitsdatum („–") → nachtragen.
+Mögliche Ursachen in dieser Reihenfolge prüfen: 1) Anlage ist **inaktiv** → aktivieren. 2) Nächste Wartung liegt **mehr als 30 Tage** in der Zukunft (wie Demo-Fall `demo5678`) → noch abwarten. 3) Es gibt gar kein Fälligkeitsdatum („–") → nachtragen. 4) Der Auftrag wurde **storniert oder ist erledigt** → er steht nur noch in der Anlagen-Historie; bei weiter fälliger Wartung legt der Scan einen neuen an.
 
 **„Foto gespeichert" erscheint nicht / Upload schlägt fehl.**
 

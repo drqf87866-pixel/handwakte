@@ -164,12 +164,19 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   Action. Konten legt das Buero per CLI an, siehe Benutzer anlegen; `role`
   (`admin`, `buero`, `monteur`) wird gespeichert, aber noch nirgends
   ausgewertet.
-- **Dashboard (`/dashboard`):** offene Wartungsauftraege (`geplant`,
-  `terminiert`, `ueberfaellig`), sortiert nach Faelligkeit, maximal 50 Zeilen.
-  Kennzahlen oben: Ueberfaellig, Faellig in 30 Tagen, Offen gesamt. Relative
-  Angaben wie "heute", "morgen", "in 10 Tagen", "seit 3 Tagen". Auftraege legt
-  der taegliche Scan in `src/lib/jobs/maintenance.ts` an (30 Tage Vorlauf,
-  idempotent).
+- **Dashboard (`/dashboard`, `/dashboard/[jobId]`):** offene
+  Wartungsauftraege (`geplant`, `terminiert`, `ueberfaellig`), sortiert nach
+  Faelligkeit, maximal 50 Zeilen, mit Statusfilter (Alle/Geplant/Terminiert/
+  Ueberfaellig). Kennzahlen oben: Ueberfaellig, Faellig in 30 Tagen, Offen
+  gesamt. Relative Angaben wie "heute", "morgen", "in 10 Tagen", "seit 3 Tagen".
+  Auftraege legt der taegliche Scan in `src/lib/jobs/maintenance.ts` an
+  (30 Tage Vorlauf, idempotent). Die Detailseite zeigt Termin, Monteur, Notiz
+  und Protokolle zum Auftrag und bietet zwei Server Actions in
+  `src/app/(dashboard)/dashboard/actions.ts`: `terminAuftrag` (Termin ist
+  Pflicht, Monteur optional, Status wird `terminiert`, auch Umbuchen aus
+  `terminiert` heraus) und `storniereAuftrag` (mit Rueckfrage; `erledigt` und
+  `storniert` sind Endzustaende). Ein Button fuehrt direkt zum
+  Serviceprotokoll (`/protokoll/[jobId]`).
 - **Kunden (`/kunden`, `/neu`, `/[id]`, `/[id]/bearbeiten`):** CRUD ueber
   Server Actions in `src/app/(dashboard)/kunden/actions.ts`. Loeschen nur ohne
   Anlagen: die Action blockiert, solange Anlagen am Kunden haengen - sonst
@@ -251,7 +258,8 @@ src/
     page.tsx                Landing: Wahl zwischen Scan und Dashboard
     (auth)/login            Login
     (dashboard)/            Buero-Ansichten (Session-Guard im Layout)
-      dashboard/            Offene Wartungsauftraege
+      dashboard/            Offene Wartungen (Liste + Filter), [jobId] (Detail,
+                            Termin, Storno) + actions.ts
       kunden/               Liste, neu, [id], [id]/bearbeiten + actions.ts
       anlagen/              Liste, neu, [id], [id]/bearbeiten, [id]/qr + actions.ts
     (mobile)/               Monteur-Ansichten (eigenes Layout + Bottom-Nav)
@@ -267,7 +275,8 @@ src/
   components/
     ui/                     shadcn/ui (button, card, input, label, textarea, table,
                             badge, separator, sonner, ...)
-    dashboard/              kunde-form, anlage-form, form-field, action-button
+    dashboard/              kunde-form, anlage-form, auftrag-termin-form,
+                            form-field, action-button
     mobile/                 qr-scanner, camera-capture, signature-pad, protokoll-form
     shared/                 Header, Sidebar, Mobile-Nav, Login-Formular, Sign-out
   lib/
@@ -333,3 +342,8 @@ scripts/send-test-email.mts Resend-Test ohne DB/Dev-Server
 - **Spontanprotokoll uebernimmt offenen Auftrag.** Wird `/protokoll/neu` ohne
   Job aufgerufen, obwohl ein offener Auftrag an der Anlage haengt, wird der
   frueheste uebernommen und mit abgeschlossen statt als Karteileiche zu bleiben.
+- **Auftrags-Status sind ein Einbahnstrang mit zwei Ausgaengen.**
+  `geplant`/`ueberfaellig`/`terminiert` lassen sich terminieren (erneut) und
+  stornieren; `erledigt` (nur via Protokoll) und `storniert` sind
+  Endzustaende. Ein stornierter Auftrag bleibt in der Anlagen-Historie, zaehlt
+  aber nicht mehr als offen - der naechste Scan legt bei Bedarf einen neuen an.
