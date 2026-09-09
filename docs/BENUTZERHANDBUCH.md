@@ -77,11 +77,12 @@ Im Büro-Bereich finden Sie oben bzw. seitlich die **Büro-Navigation** mit drei
 
 Der gerade geöffnete Bereich ist farbig markiert.
 
-Auf dem Handy finden Sie unten die Daumen-Navigation mit drei Punkten:
+Auf dem Handy finden Sie unten die Daumen-Navigation mit vier Punkten:
 
 - **Start** (`/`)
 - **Scannen** (`/scan`)
 - **Aufträge** (`/dashboard`)
+- **Sync** (`/sync`) — ausstehende Offline-Einträge einspielen. Steht eine Zahl am Symbol, warten Einträge auf Empfang (siehe Kapitel 9.5).
 
 Zum Abmelden nutzen Sie die Abmelde-Schaltfläche in der Kopfzeile.
 
@@ -338,6 +339,8 @@ Rufen Sie auf dem Handy **Scannen** (`/scan`) auf. Die Seite heißt **„Anlage 
 
 Fremde QR-Codes (z. B. WLAN-Codes) werden ignoriert — der Scan läuft einfach weiter.
 
+**Ohne Empfang:** Die Scan-Seite selbst funktioniert auch offline. Bereits besuchte Bauakten öffnen sich aus dem Zwischenspeicher (mit dem Hinweis „Offline – Stand vom letzten Besuch"); eine noch nie geöffnete Anlage braucht beim ersten Mal Empfang. Tipp für den Tag im Keller: morgens mit Empfang einmal alle heutigen Anlagen öffnen, dann sind sie unten verfügbar.
+
 Unten in der Handy-Navigation kommen Sie über **Start** zurück zur Auswahl und über **Aufträge** zur Liste der offenen Wartungen.
 
 ---
@@ -414,6 +417,24 @@ Ganz unten steht die große Schaltfläche **„Protokoll abschließen"**. Tippen
 Haben Sie den Einsatz ohne vorherigen Auftrag begonnen („Spontaner Serviceeinsatz"), wird ein gleichzeitig offener Auftrag derselben Anlage automatisch mit abgeschlossen — so bleibt keine Karteileiche im Dashboard zurück.
 
 Sonderfall: Steht dort **„Keine Anlage gewählt. Bitte zuerst den QR-Code an der Anlage scannen."**, wurde die Seite ohne Anlage aufgerufen. Gehen Sie dann zurück zu **Scannen** und öffnen Sie die Anlage erneut über ihren Token.
+
+### 9.5 Offline erfassen und synchronisieren
+
+Im Keller ohne Empfang arbeiten Sie fast wie gewohnt — mit drei sichtbaren Unterschieden:
+
+1. **Fotos und Unterschrift** melden „Offline gespeichert – Sync steht aus" statt „Foto gespeichert". Sie liegen zunächst nur auf Ihrem Gerät (platzsparend verkleinert) und wandern später automatisch mit.
+2. **„Protokoll abschließen"** legt das Protokoll ohne Netz ebenfalls auf dem Gerät ab („Offline gespeichert – wird synchronisiert, sobald Empfang besteht") und bringt Sie zurück in die Bauakte. Es gilt dann noch **nicht** als offizieller Servicebericht — das passiert erst beim Sync.
+3. Der Zähler am **Sync**-Symbol unten zeigt, wie viele Einträge warten.
+
+Sobald Empfang besteht, gibt es drei Wege zum Einspielen — alle führen zum selben Ergebnis:
+
+- **Automatisch:** Öffnen Sie die App mit Empfang (Büro oder unterwegs), startet die Synchronisierung von selbst — bei Erfolg erscheint z. B. „2 Einträge automatisch synchronisiert".
+- **Per Button:** Öffnen Sie **Sync** unten und tippen Sie auf **„Jetzt synchronisieren"**.
+- **Beim Absenden:** Enthält ein Protokoll Aufnahmen aus der Offline-Zeit und Sie haben inzwischen Netz, werden sie beim Abschließen still mit hochgeladen („Aufnahmen werden hochgeladen …").
+
+Nach erfolgreichem Sync verhält sich alles wie in Kapitel 9.4 beschrieben (Bericht abgelegt, Auftrag erledigt, Folgetermin fortgeschrieben, E-Mail ans Büro bzw. den Kunden). **Schlägt ein Eintrag fehl** (z. B. wurde der Auftrag inzwischen im Büro storniert), bleibt er mit der genauen Meldung in der **Sync**-Liste stehen — nichts geht verloren. Tippen Sie dann erneut auf **„Jetzt synchronisieren"** (ggf. nach Rücksprache mit dem Büro).
+
+Bitte beachten Sie: Abmelden leert den Seiten-Zwischenspeicher auf dem Gerät (geteilte Geräte!). Offene Sync-Einträge selbst bleiben erhalten und werden nach der nächsten Anmeldung eingespielt — im Büro sichtbar ist aber erst, was synchronisiert wurde. Synchronisieren Sie deshalb möglichst **vor** dem Abmelden.
 
 ---
 
@@ -501,6 +522,14 @@ Die Schaltfläche **„Übernehmen"** bleibt deaktiviert, solange das Feld leer 
 **„Protokoll abschließen" meldet einen Fehler.**
 
 Lesen Sie die Meldung über dem Formular: Feldfehler (z. B. keine Zahl bei den Messwerten) sind direkt am Feld markiert. Bei „Auftrag nicht gefunden" oder „bereits abgeschlossen" hat sich der Auftragsstand geändert — kehren Sie zur Bauakte zurück und öffnen Sie das Protokoll erneut. Ihre Fotos und die Unterschrift sind bereits gespeichert und gehen dabei nicht verloren.
+
+**Sync-Eintrag bleibt mit Fehler stehen.**
+
+Lesen Sie die Meldung in der **Sync**-Liste: Bei geändertem Auftragsstand („bereits abgeschlossen") klären Sie das mit dem Büro (ggf. Spontanprotokoll neu erfassen), bei Netzfehlern genügt ein erneuter Tipp auf **„Jetzt synchronisieren"** mit besserem Empfang.
+
+**Nach dem Abmelden ist die Bauakte offline weg.**
+
+Das ist Absicht (geteilte Geräte): Abmelden leert den Seiten-Zwischenspeicher. Offene Sync-Einträge bleiben erhalten und werden nach der nächsten Anmeldung eingespielt — lesen lässt sich offline danach nur, was Sie erneut besucht haben.
 
 **QR-Aufkleber sieht beim Drucken falsch aus.**
 

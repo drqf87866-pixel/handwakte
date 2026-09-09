@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { CameraCapture } from "@/components/mobile/camera-capture";
@@ -11,16 +12,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { idleState, type ActionState } from "@/lib/actions";
-import type { UploadResult } from "@/types";
+import { protokollAblegen } from "@/lib/offline/db";
+import {
+  dateiHochladen,
+  dateiOfflineAblegen,
+  istLokaleId,
+  lokaleIdsHochladen,
+} from "@/lib/offline/upload";
 
 export type ProtokollFormProps = {
   /** In der Server-Komponente uebergebene Server Action (nicht im Client binden). */
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   jobId: string | null;
   installationId: string | null;
+  /** Anzeigename fuer die Outbox (offline keine DB-Abfrage moeglich). */
+  anlageName: string | null;
+  /** Ruecksprung nach dem Offline-Abschliessen. */
+  qrToken: string | null;
 };
 
-type UploadAntwort = UploadResult & { error?: string };
+function alsDezimalzahl(wert: string): number | null {
+  const text = wert.trim();
+  if (text === "") return null;
+  const zahl = Number(text.replace(",", "."));
+  return Number.isFinite(zahl) ? zahl : NaN;
+}
 
 /**
  * Protokollformular des Monteurs: Messwerte, Taetigkeiten, Fotos, Unterschrift.
@@ -28,12 +44,26 @@ type UploadAntwort = UploadResult & { error?: string };
  * Fotos und Unterschrift werden sofort per /api/upload nach R2 gelegt (der
  * Keller hat nicht unbedingt beim Abschliessen noch Empfang). Ihre IDs sammelt
  * das Formular und die Server Action verknuepft sie mit dem neuen Report.
+ *
+ * Offline-Wege: Aufnahmen landen in der IndexedDB-Outbox (IDs mit "lokal-"-
+ * Prefix). Beim Absenden ohne Netz wird das ganze Protokoll client-validiert
+ * dort abgelegt und /sync spielt es spaeter ein - gleiche Felder, gleiche
+ * Regeln (Komma wird normalisiert), nur zeitversetzt.
  */
-export function ProtokollForm({ action, jobId, installationId }: ProtokollFormProps) {
+export function ProtokollForm({
+  action,
+  jobId,
+  installationId,
+  anlageName,
+  qrToken,
+}: ProtokollFormProps) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(action, idleState);
   const [fotoIds, setFotoIds] = useState<string[]>([]);
   const [signaturIds, setSignaturIds] = useState<string[]>([]);
   const [signaturPending, setSignaturPending] = useState(false);
+  const [sendePhase, setSendePhase] = useState<string | null>(null);
+  const [offlineFehler, setOfflineFehler] = useState<string | null>(null);
 
   if (!installationId) {
     return (
@@ -53,32 +83,144 @@ export function ProtokollForm({ action, jobId, installationId }: ProtokollFormPr
     body.set("installationId", installationId!);
     body.set("art", "signatur");
 
+    // Signatur bleibt PNG (Transparenz) - keine Komprimierung.
     setSignaturPending(true);
     try {
-      const response = await fetch("/api/upload", { method: "POST", body });
-      const data = (await response.json().catch(() => ({}))) as UploadAntwort;
-      if (!response.ok) throw new Error(data.error ?? "Unterschrift konnte nicht gespeichert werden");
-
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        throw new TypeError("offline");
+      }
+      const data = await dateiHochladen(body);
       setSignaturIds((prev) => [...prev, data.id]);
       toast.success("Unterschrift übernommen – wird mit dem Protokoll gespeichert");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unterschrift konnte nicht gespeichert werden");
+      const netzfehler =
+        error instanceof TypeError || (error instanceof Error && /failed to fetch/i.test(error.message));
+
+      if (netzfehler) {
+        try {
+          const lokal = await dateiOfflineAblegen(
+            installationId!,
+            "signatur",
+            blob,
+            "unterschrift.png",
+          );
+          setSignaturIds((prev) => [...prev, lokal.id]);
+          toast.success("Offline gespeichert – Sync steht aus");
+        } catch {
+          toast.error("Unterschrift konnte nicht zwischengespeichert werden");
+        }
+      } else {
+        toast.error(
+          error instanceof Error ? error.message : "Unterschrift konnte nicht gespeichert werden",
+        );
+      }
     } finally {
       setSignaturPending(false);
     }
   }
 
+  /**
+   * Protokoll ohne Netz client-validiert in die Outbox legen.
+   * Gibt false zurueck, wenn schon die Eingaben ungueltig sind.
+   */
+  async function offlineAbschliessen(formular: FormData, ids: string[]): Promise<boolean> {
+    const abgastemperatur = alsDezimalzahl(String(formular.get("abgastemperatur") ?? ""));
+    const co2 = alsDezimalzahl(String(formular.get("co2") ?? ""));
+    const druck = alsDezimalzahl(String(formular.get("druck") ?? ""));
+    const arbeitzeitText = String(formular.get("arbeitszeit") ?? "").trim();
+
+    if (Number.isNaN(abgastemperatur) || Number.isNaN(co2) || Number.isNaN(druck)) {
+      setOfflineFehler("Bitte bei den Messwerten Zahlen eintragen (Komma erlaubt).");
+      return false;
+    }
+
+    let arbeitszeit: number | null = null;
+    if (arbeitzeitText !== "") {
+      const minuten = Number(arbeitzeitText);
+      if (!Number.isInteger(minuten) || minuten < 1 || minuten > 1440) {
+        setOfflineFehler("Arbeitszeit: ganze Minuten zwischen 1 und 1440 erwartet.");
+        return false;
+      }
+      arbeitszeit = minuten;
+    }
+
+    const text = (name: string): string | null => {
+      const wert = String(formular.get(name) ?? "").trim();
+      return wert === "" ? null : wert;
+    };
+
+    await protokollAblegen({
+      daten: {
+        jobId,
+        installationId: installationId!,
+        abgastemperatur,
+        co2,
+        druck,
+        arbeitszeit,
+        taetigkeiten: text("taetigkeiten"),
+        maengel: text("maengel"),
+        unterschriftName: text("unterschriftName"),
+      },
+      anlageName,
+      fotoIds: ids.filter(istLokaleId),
+    });
+
+    toast.success("Offline gespeichert – wird synchronisiert, sobald Empfang besteht");
+    if (qrToken) router.push(`/anlage/${qrToken}`);
+    return true;
+  }
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setOfflineFehler(null);
+
+    const formular = new FormData(event.currentTarget);
+    const ids = String(formular.get("attachmentIds") ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const lokale = ids.filter(istLokaleId);
+
+    // Kein Netz: alles in die Outbox (auch ohne Anhaenge - reine Formulardaten).
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      await offlineAbschliessen(formular, ids);
+      return;
+    }
+
+    // Netz da, aber Aufnahmen stammen aus der Offline-Zeit: erst einspielen,
+    // dann normal abschliessen. Wackelt das Netz, sicherheitshalber ablegen.
+    if (lokale.length > 0) {
+      setSendePhase("Aufnahmen werden hochgeladen …");
+      try {
+        const { zugeordnet, fehler } = await lokaleIdsHochladen(lokale);
+        if (fehler) {
+          await offlineAbschliessen(formular, ids);
+          return;
+        }
+        formular.set(
+          "attachmentIds",
+          ids.map((id) => zugeordnet.get(id) ?? id).join(","),
+        );
+      } finally {
+        setSendePhase(null);
+      }
+    }
+
+    formAction(formular);
+  }
+
   const fehler = state.fieldErrors ?? {};
+  const kopfFehler = (!state.ok && state.message) || offlineFehler;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       <input type="hidden" name="jobId" value={jobId ?? ""} />
       <input type="hidden" name="installationId" value={installationId} />
       <input type="hidden" name="attachmentIds" value={[...fotoIds, ...signaturIds].join(",")} />
 
-      {state.message && !state.ok ? (
+      {kopfFehler ? (
         <p className="text-destructive text-sm" aria-live="polite">
-          {state.message}
+          {kopfFehler}
         </p>
       ) : null}
 
@@ -177,8 +319,13 @@ export function ProtokollForm({ action, jobId, installationId }: ProtokollFormPr
         </CardContent>
       </Card>
 
-      <Button type="submit" size="lg" className="w-full" disabled={pending || signaturPending}>
-        {pending ? "Wird gespeichert …" : "Protokoll abschließen"}
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full"
+        disabled={pending || signaturPending || sendePhase !== null}
+      >
+        {sendePhase ?? (pending ? "Wird gespeichert …" : "Protokoll abschließen")}
       </Button>
     </form>
   );

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { Camera, ClipboardList } from "lucide-react";
 
 import { CameraCapture } from "@/components/mobile/camera-capture";
+import { OfflineBanner } from "@/components/shared/offline-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +58,7 @@ export default async function AnlagePage({ params }: PageProps<"/anlage/[qrToken
 
   return (
     <div className="space-y-5">
+      <OfflineBanner />
       <div>
         <p className="mb-2">
           {ueberfaellig ? (

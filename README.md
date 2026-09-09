@@ -27,7 +27,7 @@ hier in `README.md`.
 | Validierung | Zod (Server Actions) |
 | QR Druck | `qrcode` (Druckansicht `/anlagen/[id]/qr`) |
 | QR Scan | `BarcodeDetector` nativ (Chrome/Edge/Android) + `jsqr`-Fallback (Safari/iPhone) + manuelle Token-Eingabe |
-| PWA | `public/manifest.webmanifest` (`standalone`, `start_url: /`) |
+| PWA | Manifest + hand-rolled `public/sw.js` (Shell-Precache, Network-First fuer Bauakte), IndexedDB-Outbox mit `/sync` |
 
 ## Architektur
 
@@ -220,6 +220,18 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   `attachment`, Auslieferung geschuetzt ueber `/api/files/*` (Session-Pflicht,
   `..`-Keys abgewiesen). Limits: max. 15 MB, Typen JPEG/PNG/WebP/HEIC/PDF.
   Ordner im Bucket: `fotos/`, `signaturen/`, `dokumente/` je Anlage.
+- **Offline (Monteur, `/sync`):** Service Worker (`public/sw.js`) mit
+  Shell-Precache und Network-First fuer `/scan`, `/anlage/*`, `/protokoll/*`
+  (zuletzt besuchte Bauakten lesbar, `/offline`-Fallback). Fotos werden vor
+  Upload/Ablage komprimiert (1600 px, JPEG) und landen ohne Netz in der
+  IndexedDB-Outbox (`src/lib/offline/`), Protokolle client-validiert gleich
+  mit. `/sync` (Badge in der Mobil-Navigation, Auto-Sync bei `online` in
+  beiden Layouts) spielt erst Blobs, dann den Abschluss ueber
+  `/api/sync/protokoll` ein - dieselbe Kernfunktion wie die Server Action
+  (`protokollAbschliessenKern` in `src/lib/protokoll-abschluss.ts`). Erfolg
+  wird aus der Outbox geloescht, Fehler bleiben mit Meldung und Retry stehen.
+  Kein Background Sync (gibt es auf iPhones nicht): Button plus `online`-Event
+  tragen das. Abmelden leert die SW-Caches (geteilte Geraete).
 
 ## Deployment
 
@@ -273,10 +285,13 @@ src/
       scan                  QR-Scan (Kamera + Texteingabe-Fallback)
       anlage/[qrToken]      Anlagendetail per QR-Token
       protokoll/[jobId]     Serviceprotokoll zum Auftrag ("neu" = Spontanprotokoll)
+      sync                  Outbox-Liste mit Sync-Button (Client, IndexedDB)
+    offline/                Offline-Fehlerseite (ohne Guard, aus dem SW-Cache)
     api/
       auth/[...all]         Better Auth Catch-All
       cron/maintenance      Wartungs-Scan als HTTP-Endpunkt (GET/POST, Bearer CRON_SECRET)
       upload                Proxy-Upload nach R2 + Metadaten in Postgres
+      sync/protokoll        Outbox-Abschluss (JSON, Session-Pflicht, selber Kern)
       files/[...key]        geschuetzte Auslieferung aus R2
       health                Verbindungstest aller Dienste
   components/
@@ -284,9 +299,11 @@ src/
                             badge, separator, sonner, ...)
     dashboard/              kunde-form, anlage-form, auftrag-termin-form,
                             form-field, action-button
-    mobile/                 qr-scanner, camera-capture, signature-pad, protokoll-form
+    mobile/                 qr-scanner, camera-capture, signature-pad, protokoll-form,
+                            sync-liste
     shared/                 Header, Sidebar, Mobile-Nav, Login-Formular, Sign-out,
-                            Passwort-Formular
+                            Passwort-Formular, Sw-Register, Auto-Sync,
+                            Offline-Banner, Offline-Hooks
   lib/
     actions.ts              ActionState, Feldfehler, Unique-Erkennung (Server Actions)
     auth.ts                 Better-Auth-Instanz (lazy)
@@ -299,9 +316,15 @@ src/
     tokens.ts               generateQrToken()
     utils.ts                cn() (Tailwind-Klassen)
     jobs/maintenance.ts     taeglicher Wartungs-Scan (VORLAUF_TAGE = 30)
+    protokoll-abschluss.ts  Abschluss-Kern (Report, Verknuepfung, Folgetermin),
+                            genutzt von Server Action und Sync-Route
+    offline/                db (IndexedDB-Outbox), bilder (Komprimierung),
+                            upload (Upload-Helfer), sync (Sync-Engine, Client)
   types/index.ts            UploadResult, HealthResponse, AuftragMitKontext, ...
   worker.ts                 Worker-Entrypoint: fetch + scheduled
+public/sw.js + icons/      Service Worker (hand-rolled) und PWA-Icons
 public/manifest.webmanifest PWA-Manifest (standalone)
+scripts/generate-icons.mjs Icons aus Bitmap-Schrift (Platzhalter, node only)
 drizzle/                    Migrationen (per db:generate erzeugt) + meta/
 scripts/create-user.mts     Benutzer anlegen (CLI, siehe Deployment)
 scripts/send-test-email.mts Resend-Test ohne DB/Dev-Server
@@ -350,6 +373,15 @@ scripts/send-test-email.mts Resend-Test ohne DB/Dev-Server
 - **Spontanprotokoll uebernimmt offenen Auftrag.** Wird `/protokoll/neu` ohne
   Job aufgerufen, obwohl ein offener Auftrag an der Anlage haengt, wird der
   frueheste uebernommen und mit abgeschlossen statt als Karteileiche zu bleiben.
+- **Offline: ein Kern, zwei Wege.** `protokollAbschliessenKern` enthaelt die
+  komplette Abschluss-Logik; die Server Action (Formular, Redirect) und die
+  Sync-Route (Outbox, JSON) sind duenne Huelsen darum. Kein doppelter Code,
+  keine abweichenden Regeln beim Nach-Syncen.
+- **SW-Caches sind Single-User.** Gecachte Bauakte-Seiten enthalten Kundendaten
+  - beim Abmelden fliegen alle Caches raus, damit auf geteilten Geraeten kein
+  Nachfolger offline noch fremde Akten liest. `/scan` und `/sync` stehen
+  bewusst nicht im Precache (sie brauchen eine Session und wuerden sonst die
+  Login-Seite unter ihrer URL cachen).
 - **Auftrags-Status sind ein Einbahnstrang mit zwei Ausgaengen.**
   `geplant`/`ueberfaellig`/`terminiert` lassen sich terminieren (erneut) und
   stornieren; `erledigt` (nur via Protokoll) und `storniert` sind
