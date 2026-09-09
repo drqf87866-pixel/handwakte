@@ -5,11 +5,12 @@ B2B-Plattform fuer einen Heizungsbau- und Sanitaerbetrieb: Anlagenverwaltung
 
 - **Buero (Desktop):** Dashboard mit offenen Wartungen, Kunden- und
   Anlagen-CRUD, QR-Aufkleber als Druckansicht.
-- **Monteur (Mobile/PWA):** QR-Scan an der Anlage, Fotos, Serviceprotokoll,
-  Unterschrift.
+- **Monteur (Mobile/PWA):** QR-Scan an der Anlage (Kamera oder
+  Token-Eingabe), Fotos, Serviceprotokoll mit Messwerten, Unterschrift.
+  Installierbar via `public/manifest.webmanifest` (`standalone`).
 
-Aktueller Stand, Demo-Daten und die naechsten Schritte stehen in
-`docs/BENUTZERHANDBUCH.md` (Bedienung) und `README.md` (Entwicklung).
+Bedienung steht in `docs/BENUTZERHANDBUCH.md`, Entwicklung und Deployment
+hier in `README.md`.
 
 ## Stack
 
@@ -24,7 +25,9 @@ Aktueller Stand, Demo-Daten und die naechsten Schritte stehen in
 | Cron | Cloudflare Scheduled Worker, taeglich 06:00 UTC |
 | UI | Tailwind CSS v4 + shadcn/ui |
 | Validierung | Zod (Server Actions) |
-| QR-Codes | `qrcode` (Druckansicht `/anlagen/[id]/qr`) |
+| QR Druck | `qrcode` (Druckansicht `/anlagen/[id]/qr`) |
+| QR Scan | `BarcodeDetector` nativ (Chrome/Edge/Android) + `jsqr`-Fallback (Safari/iPhone) + manuelle Token-Eingabe |
+| PWA | `public/manifest.webmanifest` (`standalone`, `start_url: /`) |
 
 ## Architektur
 
@@ -56,9 +59,9 @@ pnpm cf-typegen               # Typen fuer die Cloudflare-Bindings
 ```
 
 `.env` und `.dev.vars` muessen **identisch** befuellt sein: `.env` versorgt
-`next dev` und die `db:*`-Skripte, `.dev.vars` versorgt `wrangler dev` /
-`pnpm preview`. Laufen sie auseinander, arbeiten Dev-Server und Worker gegen
-verschiedene Datenbanken, ohne dass es auffaellt.
+`next dev` und die `db:*`-Skripte, `.dev.vars` versorgt `pnpm preview` (die
+OpenNext-Workers-Runtime, `localhost:8787`). Laufen sie auseinander, arbeiten
+Dev-Server und Worker gegen verschiedene Datenbanken, ohne dass es auffaellt.
 
 `.env` ausfuellen (Details siehe `.env.example`):
 
@@ -73,7 +76,7 @@ verschiedene Datenbanken, ohne dass es auffaellt.
 
 Ohne verifizierte Domain gilt: `RESEND_FROM="Wartung <onboarding@resend.dev>"`
 und zugestellt wird nur an die eigene Resend-Account-Adresse (reicht fuer die
-Entwicklung, siehe HANDOFF.md).
+Entwicklung, Details siehe `.env.example`).
 
 ### Datenbank-Branches
 
@@ -106,6 +109,13 @@ pnpm db:generate   # Migration aus dem geaenderten Schema erzeugen, committen
 pnpm db:migrate    # anwenden
 ```
 
+Nach Aenderungen an `src/lib/auth.ts` das Better-Auth-Schema abgleichen
+(Kommentar in `src/lib/db/schema.ts`):
+
+```bash
+pnpm auth:generate  # schreibt src/lib/db/schema.generated.ts, bei Bedarf uebernehmen
+```
+
 Eine frisch migrierte Datenbank hat noch kein Konto, und ohne Konto kommt man
 am Login nicht vorbei - Registrieren geht in der App nicht. Erstes Konto siehe
 [Benutzer anlegen](#benutzer-anlegen).
@@ -124,19 +134,25 @@ pnpm dev        # Next.js Dev-Server, Bindings inklusive (localhost:3000)
 pnpm preview    # OpenNext-Build + echte Workers-Runtime (localhost:8787)
 pnpm typecheck
 pnpm lint
-pnpm user:create -- --email=... --name="..."   # Konto anlegen, siehe Deployment
+pnpm user:create -- --email=... --name="..."   # Konto anlegen, siehe Benutzer anlegen
+```
+
+Mailversand ohne Dev-Server und DB testen:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env scripts/send-test-email.mts -- --to=...
 ```
 
 `/api/health` prueft Neon, R2, Resend und Better Auth einzeln und antwortet
 immer mit 200 plus Detail-Objekt - so ist ablesbar, welcher Baustein klemmt.
 
-Cron lokal ausloesen:
+Cron lokal ausloesen (gegen `pnpm preview` auf Port 8787):
 
 ```bash
-# echter scheduled()-Handler (wrangler dev --test-scheduled)
+# echter scheduled()-Handler
 curl "http://localhost:8787/__scheduled?cron=0+6+*+*+*"
 
-# HTTP-Endpunkt
+# HTTP-Endpunkt (GET oder POST, Bearer CRON_SECRET)
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/maintenance
 ```
 
@@ -145,42 +161,62 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
 - **Anmeldung (`/login`):** E-Mail und Passwort, Session 30 Tage (Monteure
   sollen nicht taeglich neu ran). Der Guard sitzt als `requireSession()` in den
   Layouts von `(dashboard)` und `(mobile)` und zusaetzlich in jeder Server
-  Action. Konten legt das Buero per CLI an, siehe Deployment; `role`
+  Action. Konten legt das Buero per CLI an, siehe Benutzer anlegen; `role`
   (`admin`, `buero`, `monteur`) wird gespeichert, aber noch nirgends
   ausgewertet.
 - **Dashboard (`/dashboard`):** offene Wartungsauftraege (`geplant`,
-  `terminiert`, `ueberfaellig`), sortiert nach Faelligkeit. Auftraege legt der
-  taegliche Scan in `src/lib/jobs/maintenance.ts` an (30 Tage Vorlauf,
+  `terminiert`, `ueberfaellig`), sortiert nach Faelligkeit, maximal 50 Zeilen.
+  Kennzahlen oben: Ueberfaellig, Faellig in 30 Tagen, Offen gesamt. Relative
+  Angaben wie "heute", "morgen", "in 10 Tagen", "seit 3 Tagen". Auftraege legt
+  der taegliche Scan in `src/lib/jobs/maintenance.ts` an (30 Tage Vorlauf,
   idempotent).
 - **Kunden (`/kunden`, `/neu`, `/[id]`, `/[id]/bearbeiten`):** CRUD ueber
   Server Actions in `src/app/(dashboard)/kunden/actions.ts`. Loeschen nur ohne
-  Anlagen (FK cascadet bis in die Attachment-Metadaten, R2-Objekte wuerden
-  verwaist bleiben).
+  Anlagen: die Action blockiert, solange Anlagen am Kunden haengen - sonst
+  wuerden Auftraege, Protokolle und Attachment-Metadaten per
+  `onDelete: cascade` mitgeloescht und R2-Objekte verwaist zurueckbleiben.
 - **Anlagen (`/anlagen`, analog + `/[id]/qr`):** CRUD ueber
   `src/app/(dashboard)/anlagen/actions.ts`. `qrToken` wird per
   `generateQrToken()` erzeugt und bleibt nach dem Anlegen unveraenderlich (der
   Aufkleber klebt bereits). `/anlagen/[id]/qr` ist die Druckansicht fuer den
-  Aufkleber. Deaktivieren via `aktiv`-Flag statt Loeschen - inaktive Anlagen
-  fallen aus dem Wartungs-Scan, Historie bleibt erhalten.
-- **Folgetermin:** bleibt `naechste_wartung_am` beim Speichern leer, wird es
-  aus `letzte_wartung_am` + `wartungsintervall_monate` berechnet - sonst faende
-  der Scan die Anlage nie. Ein eingetragener Wert gewinnt.
-- **Mobil (`/scan`, `/anlage/[qrToken]`, `/protokoll/[jobId]`):** QR-Scan per
-  Kamera (`QrScanner`: nativ per BarcodeDetector, jsQR-Fallback fuer
-  Safari/iPhone, manuelle Token-Eingabe als Ausweg), Anlagendetail, Protokollformular mit
-  Fotos und Unterschrift. Das Absenden laeuft ueber die Server Action
-  `protokollAbschliessen` in `src/app/(mobile)/protokoll/actions.ts`: Sie
-  schreibt `service_report`, verknuepft die per `/api/upload` abgelegten Fotos
-  und die Signatur, setzt den Auftrag auf `erledigt`, schreibt letzte und
-  naechste Wartung fort und stoesst die Kundenbestaetigung
-  (`sendServiceReportEmail`, best effort) an.
+  Aufkleber. Es gibt keinen Loesch-Endpunkt - stattdessen Deaktivieren via
+  `aktiv`-Flag: inaktive Anlagen fallen aus dem Wartungs-Scan, Historie bleibt
+  erhalten.
+- **Folgetermin (Anlage-Formular):** bleibt `naechste_wartung_am` beim
+  Speichern leer, wird es aus `letzte_wartung_am` + `wartungsintervall_monate`
+  berechnet - sonst faende der Scan die Anlage nie. Ein eingetragener Wert
+  gewinnt. Nach einem Protokoll gilt zusaetzlich die Max-Regel unter
+  Entscheidungen (manuell weiter nach hinten gelegte Termine bleiben).
+- **Mobil (`/scan`, `/anlage/[qrToken]`, `/protokoll/[jobId]`,
+  `/protokoll/neu?installation=...`):** QR-Scan per Kamera (`QrScanner`:
+  nativ per BarcodeDetector, jsQR-Fallback fuer Safari/iPhone, manuelle
+  Token-Eingabe als Ausweg; fremde QR-Codes werden ignoriert), Anlagendetail
+  mit direktem Foto-Upload, Protokollformular mit Messwerten (Abgastemp.,
+  CO2, Druck - Komma-Eingabe wird normalisiert), Arbeitszeit, Taetigkeiten,
+  Maengeln, Fotos und Unterschrift. Das Absenden laeuft ueber die Server
+  Action `protokollAbschliessen` in `src/app/(mobile)/protokoll/actions.ts`:
+  Sie schreibt `service_report`, verknuepft nur die Attachments dieser Sitzung
+  (gleiche Anlage, noch ohne Report; Signatur-Key wird serverseitig aus der
+  juengsten Signatur-Datei abgeleitet), setzt den Auftrag auf `erledigt`,
+  schreibt letzte und naechste Wartung fort (siehe Folgetermin-Regel oben)
+  und stoesst die Kundenbestaetigung (`sendServiceReportEmail`, best effort)
+  an. `jobId === "neu"` ist ein Spontanprotokoll ohne vorherigen Auftrag -
+  ein gleichzeitig offener Auftrag derselben Anlage wird dabei automatisch mit
+  abgeschlossen (fruehester zuerst).
 - **Dateien:** Upload als Proxy ueber `/api/upload` nach R2 plus Metadaten in
-  `attachment`, Auslieferung geschuetzt ueber `/api/files/*`.
+  `attachment`, Auslieferung geschuetzt ueber `/api/files/*` (Session-Pflicht,
+  `..`-Keys abgewiesen). Limits: max. 15 MB, Typen JPEG/PNG/WebP/HEIC/PDF.
+  Ordner im Bucket: `fotos/`, `signaturen/`, `dokumente/` je Anlage.
 
 ## Deployment
 
 ```bash
-pnpm exec wrangler secret put DATABASE_URL     # analog fuer die uebrigen Secrets
+pnpm exec wrangler secret put DATABASE_URL
+pnpm exec wrangler secret put BETTER_AUTH_SECRET
+pnpm exec wrangler secret put RESEND_API_KEY
+pnpm exec wrangler secret put RESEND_FROM
+pnpm exec wrangler secret put MAINTENANCE_NOTIFY_EMAIL
+pnpm exec wrangler secret put CRON_SECRET
 pnpm run deploy
 ```
 
@@ -200,7 +236,8 @@ pnpm user:create -- --email=chef@example.de --name="Anna Chef" --role=admin
 Rollen: `admin`, `buero`, `monteur` (Default). Steht keine `DATABASE_URL` in der
 Umgebung, fragt das Skript sie ab - fuer Produktion also die URL aus dem
 Passwortmanager einfuegen, fuer den dev-Branch die aus `.env`. Der Ziel-Host
-wird vor dem Schreiben angezeigt und muss bestaetigt werden.
+wird vor dem Schreiben angezeigt und muss mit `ja` bestaetigt werden
+(`--yes` ueberspringt die Abfrage fuer Skripte).
 
 Das erzeugte Passwort erscheint genau einmal in der Ausgabe; einen Dialog zum
 Aendern gibt es in der App noch nicht. Ein eigenes Passwort geht ueber
@@ -220,32 +257,37 @@ src/
     (mobile)/               Monteur-Ansichten (eigenes Layout + Bottom-Nav)
       scan                  QR-Scan (Kamera + Texteingabe-Fallback)
       anlage/[qrToken]      Anlagendetail per QR-Token
-      protokoll/[jobId]     Serviceprotokoll zum Auftrag
+      protokoll/[jobId]     Serviceprotokoll zum Auftrag ("neu" = Spontanprotokoll)
     api/
       auth/[...all]         Better Auth Catch-All
-      cron/maintenance      Wartungs-Scan als HTTP-Endpunkt (Bearer CRON_SECRET)
+      cron/maintenance      Wartungs-Scan als HTTP-Endpunkt (GET/POST, Bearer CRON_SECRET)
       upload                Proxy-Upload nach R2 + Metadaten in Postgres
       files/[...key]        geschuetzte Auslieferung aus R2
       health                Verbindungstest aller Dienste
   components/
-    ui/                     shadcn/ui (button, card, input, textarea, table, ...)
+    ui/                     shadcn/ui (button, card, input, label, textarea, table,
+                            badge, separator, sonner, ...)
     dashboard/              kunde-form, anlage-form, form-field, action-button
-    mobile/                 QR-Scanner, Kamera, Signatur-Canvas, Protokollformular
+    mobile/                 qr-scanner, camera-capture, signature-pad, protokoll-form
     shared/                 Header, Sidebar, Mobile-Nav, Login-Formular, Sign-out
   lib/
     actions.ts              ActionState, Feldfehler, Unique-Erkennung (Server Actions)
     auth.ts                 Better-Auth-Instanz (lazy)
     auth-client.ts          Client-Hooks
     dates.ts                addMonths() fuer Folgetermine
-    db/                     Neon + Drizzle, schema.ts (9 Tabellen)
+    db/                     Neon + Drizzle (index.ts, schema.ts mit 9 Tabellen)
     email.ts                Resend-Client und Mail-Templates
     r2.ts                   Bucket-Helper ueber env.MY_BUCKET
     session.ts              requireSession() fuer Server-Komponenten
     tokens.ts               generateQrToken()
+    utils.ts                cn() (Tailwind-Klassen)
     jobs/maintenance.ts     taeglicher Wartungs-Scan (VORLAUF_TAGE = 30)
+  types/index.ts            UploadResult, HealthResponse, AuftragMitKontext, ...
   worker.ts                 Worker-Entrypoint: fetch + scheduled
-drizzle/                    Migrationen (per db:generate erzeugt)
+public/manifest.webmanifest PWA-Manifest (standalone)
+drizzle/                    Migrationen (per db:generate erzeugt) + meta/
 scripts/create-user.mts     Benutzer anlegen (CLI, siehe Deployment)
+scripts/send-test-email.mts Resend-Test ohne DB/Dev-Server
 ```
 
 ## Entscheidungen, die beim Weiterbauen wichtig sind
