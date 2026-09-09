@@ -41,7 +41,7 @@ function createAuth() {
       // Ohne disableSignUp waere POST /api/auth/sign-up/email oeffentlich.
       disableSignUp: true,
       requireEmailVerification: false,
-      minPasswordLength: 10,
+      minPasswordLength: 8,
     },
 
     user: {

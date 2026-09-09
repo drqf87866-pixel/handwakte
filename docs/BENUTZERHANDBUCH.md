@@ -49,6 +49,17 @@ Die Startseite der Anwendung fragt Sie daher zuerst: **„Anlage scannen"** (fü
 
 Ihre Zugangsdaten erhalten Sie von Ihrem Administrator. Es gibt keine Selbstregistrierung in der Anwendung.
 
+### 2.1a Passwort ändern
+
+Ihr Passwort wechseln Sie selbst, ohne den Administrator:
+
+1. Klicken Sie in der Kopfzeile auf **„Passwort"** (Schlüssel-Symbol, neben Ihrem Namen).
+2. Geben Sie Ihr **aktuelles Passwort** sowie zweimal das **neue Passwort** ein (mindestens 8 Zeichen).
+3. Klicken Sie auf **„Passwort ändern"**.
+4. Ergebnis: Das neue Passwort gilt sofort. Waren Sie zusätzlich auf einem anderen Gerät angemeldet (z. B. Handy und Büro-Rechner), werden die anderen Sitzungen dabei abgemeldet — melden Sie sich dort einfach neu an.
+
+Stimmt das aktuelle Passwort nicht, erscheint „Das aktuelle Passwort ist falsch." Passen die beiden neuen Eingaben nicht zusammen, erscheint ein entsprechender Hinweis — Ihre Eingaben bleiben dabei stehen.
+
 ### 2.2 Startseite
 
 Nach dem Aufruf der Startadresse sehen Sie die Karte **„Digitale Bauakte"** mit zwei großen Schaltflächen:
@@ -453,7 +464,7 @@ Was das für Sie bedeutet:
 
 **Anmeldung schlägt fehl.**
 
-Prüfen Sie E-Mail-Schreibweise und Passwort. Nach einem falschen Versuch erscheint eine Fehlermeldung über dem Formular. Bei wiederholtem Scheitern wenden Sie sich an Ihren Administrator (neues Passwort vergeben lassen).
+Prüfen Sie E-Mail-Schreibweise und Passwort. Nach einem falschen Versuch erscheint eine Fehlermeldung über dem Formular. Kommen Sie gar nicht mehr hinein (Passwort vergessen), wenden Sie sich an Ihren Administrator (neues Passwort vergeben lassen) — solange Sie noch angemeldet sind, können Sie es stattdessen selbst unter **„Passwort"** in der Kopfzeile ändern (siehe Kapitel 2.1a).
 
 **Ich werde auf die Anmeldeseite zurückgeworfen.**
 

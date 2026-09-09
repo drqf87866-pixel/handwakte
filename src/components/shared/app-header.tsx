@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Flame } from "lucide-react";
+import { Flame, KeyRound } from "lucide-react";
 
 import { SignOutButton } from "@/components/shared/sign-out-button";
+import { Button } from "@/components/ui/button";
 
 function Initial({ name }: { name: string }) {
   const initial = (name.trim().charAt(0) || "?").toUpperCase();
@@ -34,6 +35,12 @@ export function AppHeader({ user }: { user: { name: string; email: string } }) {
         <div className="flex items-center gap-3">
           <Initial name={displayName} />
           <span className="hidden max-w-44 truncate text-sm sm:inline">{displayName}</span>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/passwort" title="Passwort ändern">
+              <KeyRound />
+              <span className="sr-only sm:not-sr-only">Passwort</span>
+            </Link>
+          </Button>
           <SignOutButton />
         </div>
       </div>

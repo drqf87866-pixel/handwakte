@@ -96,8 +96,8 @@ try {
 
   const vorgegeben = process.env.NEW_USER_PASSWORD?.trim();
   const password = vorgegeben || randomBytes(12).toString("base64url");
-  if (password.length < 10) {
-    fail("NEW_USER_PASSWORD braucht mindestens 10 Zeichen (minPasswordLength in src/lib/auth.ts).");
+  if (password.length < 8) {
+    fail("NEW_USER_PASSWORD braucht mindestens 8 Zeichen (minPasswordLength in src/lib/auth.ts).");
   }
 
   const auth = betterAuth({
@@ -120,7 +120,7 @@ try {
     // deswegen baut dieses Skript eine eigene Instanz, statt src/lib/auth.ts
     // zu importieren (das ausserdem ueber den @/-Alias importiert, den plain
     // Node nicht aufloest).
-    emailAndPassword: { enabled: true, minPasswordLength: 10 },
+    emailAndPassword: { enabled: true, minPasswordLength: 8 },
   });
 
   const angelegt = await auth.api
@@ -144,7 +144,7 @@ try {
   if (!vorgegeben) {
     console.log(`  Passwort: ${password}`);
     console.log("  Jetzt in den Passwortmanager uebernehmen - es wird nicht wieder angezeigt.");
-    console.log("  Einen Dialog zum Aendern gibt es in der App noch nicht.\n");
+    console.log("  Aendern kann das Konto selbst unter /passwort in der App.\n");
   } else {
     console.log("");
   }

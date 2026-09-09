@@ -164,6 +164,12 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   Action. Konten legt das Buero per CLI an, siehe Benutzer anlegen; `role`
   (`admin`, `buero`, `monteur`) wird gespeichert, aber noch nirgends
   ausgewertet.
+- **Passwort aendern (`/passwort`):** eigenes Passwort wechseln (aktuelles plus
+  zweimal neues, mindestens 8 Zeichen). Laeuft ueber
+  Better-Auth-`changePassword` direkt im Formular (`PasswortForm`,
+  `authClient` wie beim Login); andere Sitzungen werden dabei abgemeldet
+  (`revokeOtherSessions`). Einstieg ueber das Schluessel-Symbol in der
+  Kopfzeile - sichtbar im Buero- wie im Monteur-Layout.
 - **Dashboard (`/dashboard`, `/dashboard/[jobId]`):** offene
   Wartungsauftraege (`geplant`, `terminiert`, `ueberfaellig`), sortiert nach
   Faelligkeit, maximal 50 Zeilen, mit Statusfilter (Alle/Geplant/Terminiert/
@@ -246,9 +252,9 @@ Passwortmanager einfuegen, fuer den dev-Branch die aus `.env`. Der Ziel-Host
 wird vor dem Schreiben angezeigt und muss mit `ja` bestaetigt werden
 (`--yes` ueberspringt die Abfrage fuer Skripte).
 
-Das erzeugte Passwort erscheint genau einmal in der Ausgabe; einen Dialog zum
-Aendern gibt es in der App noch nicht. Ein eigenes Passwort geht ueber
-`NEW_USER_PASSWORD` (mindestens 10 Zeichen).
+Das erzeugte Passwort erscheint genau einmal in der Ausgabe; aendern kann es
+das Konto danach selbst unter `/passwort` in der App. Ein eigenes Passwort
+gleich beim Anlegen geht ueber `NEW_USER_PASSWORD` (mindestens 8 Zeichen).
 
 ## Struktur
 
@@ -258,6 +264,7 @@ src/
     page.tsx                Landing: Wahl zwischen Scan und Dashboard
     (auth)/login            Login
     (dashboard)/            Buero-Ansichten (Session-Guard im Layout)
+      passwort/             Eigenes Passwort wechseln (Better-Auth changePassword)
       dashboard/            Offene Wartungen (Liste + Filter), [jobId] (Detail,
                             Termin, Storno) + actions.ts
       kunden/               Liste, neu, [id], [id]/bearbeiten + actions.ts
@@ -278,7 +285,8 @@ src/
     dashboard/              kunde-form, anlage-form, auftrag-termin-form,
                             form-field, action-button
     mobile/                 qr-scanner, camera-capture, signature-pad, protokoll-form
-    shared/                 Header, Sidebar, Mobile-Nav, Login-Formular, Sign-out
+    shared/                 Header, Sidebar, Mobile-Nav, Login-Formular, Sign-out,
+                            Passwort-Formular
   lib/
     actions.ts              ActionState, Feldfehler, Unique-Erkennung (Server Actions)
     auth.ts                 Better-Auth-Instanz (lazy)
