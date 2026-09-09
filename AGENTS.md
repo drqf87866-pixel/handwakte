@@ -7,6 +7,15 @@ via `@opennextjs/cloudflare`, Neon Postgres over `@neondatabase/serverless` +
 Drizzle ORM, Better Auth (email/password, no self-signup), Cloudflare R2 via
 the `MY_BUCKET` worker binding, Resend for email, daily cron scan at 06:00 UTC.
 
+## Business context
+
+- Initial users: two brothers running a heating/plumbing business with no
+  employees; both do office and field work themselves.
+- No role separation needed for now: `role` (`admin`, `buero`, `monteur`)
+  exists in the schema for future growth but is intentionally not enforced
+  in guards or UI. Do not build role enforcement or user-management UI
+  unless explicitly requested.
+
 Docs (do not duplicate, link instead):
 
 - `README.md` — setup, dev workflow, features, deployment, architecture decisions.
