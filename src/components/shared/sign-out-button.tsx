@@ -3,16 +3,27 @@
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 
-import { signOut } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
+import type { VariantProps } from "class-variance-authority";
 
-export function SignOutButton() {
+import { signOut } from "@/lib/auth-client";
+import { Button, buttonVariants } from "@/components/ui/button";
+
+export function SignOutButton({
+  variant = "ghost",
+  size = "sm",
+  className,
+  labelClassName = "sr-only sm:not-sr-only",
+}: VariantProps<typeof buttonVariants> & {
+  className?: string;
+  labelClassName?: string;
+}) {
   const router = useRouter();
 
   return (
     <Button
-      variant="ghost"
-      size="sm"
+      variant={variant}
+      size={size}
+      className={className}
       onClick={async () => {
         await signOut();
         // Gecachte Bauakte-Seiten enthalten Kundendaten. Auf einem geteilten
@@ -28,7 +39,7 @@ export function SignOutButton() {
       }}
     >
       <LogOut />
-      <span className="sr-only sm:not-sr-only">Abmelden</span>
+      <span className={labelClassName}>Abmelden</span>
     </Button>
   );
 }

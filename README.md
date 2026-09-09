@@ -164,12 +164,12 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   Action. Konten legt das Buero per CLI an, siehe Benutzer anlegen; `role`
   (`admin`, `buero`, `monteur`) wird gespeichert, aber noch nirgends
   ausgewertet.
-- **Passwort aendern (`/passwort`):** eigenes Passwort wechseln (aktuelles plus
-  zweimal neues, mindestens 8 Zeichen). Laeuft ueber
-  Better-Auth-`changePassword` direkt im Formular (`PasswortForm`,
-  `authClient` wie beim Login); andere Sitzungen werden dabei abgemeldet
-  (`revokeOtherSessions`). Einstieg ueber das Schluessel-Symbol in der
-  Kopfzeile - sichtbar im Buero- wie im Monteur-Layout.
+- **Profil (`/profil`):** Konto-Info (Name, E-Mail, Rolle), eigenes Passwort
+  wechseln (aktuelles plus zweimal neues, mindestens 8 Zeichen) und Abmelden
+  an einem Ort. Das Passwort laeuft ueber Better-Auth-`changePassword`
+  direkt im Formular (`PasswortForm`, `authClient` wie beim Login); andere
+  Sitzungen werden dabei abgemeldet (`revokeOtherSessions`). Einstieg ueber
+  das User-Icon in der Kopfzeile - sichtbar im Buero- wie im Monteur-Layout.
 - **Dashboard (`/dashboard`, `/dashboard/[jobId]`):** offene
   Wartungsauftraege (`geplant`, `terminiert`, `ueberfaellig`), sortiert nach
   Faelligkeit, maximal 50 Zeilen, mit Statusfilter (Alle/Geplant/Terminiert/
@@ -265,7 +265,7 @@ wird vor dem Schreiben angezeigt und muss mit `ja` bestaetigt werden
 (`--yes` ueberspringt die Abfrage fuer Skripte).
 
 Das erzeugte Passwort erscheint genau einmal in der Ausgabe; aendern kann es
-das Konto danach selbst unter `/passwort` in der App. Ein eigenes Passwort
+das Konto danach selbst unter `/profil` in der App. Ein eigenes Passwort
 gleich beim Anlegen geht ueber `NEW_USER_PASSWORD` (mindestens 8 Zeichen).
 
 ## Struktur
@@ -276,12 +276,13 @@ src/
     page.tsx                Landing: Wahl zwischen Scan und Dashboard
     (auth)/login            Login
     (dashboard)/            Buero-Ansichten (Session-Guard im Layout)
-      passwort/             Eigenes Passwort wechseln (Better-Auth changePassword)
+      profil/               Konto-Info, Passwortwechsel, Abmelden (ProfilInhalt)
       dashboard/            Offene Wartungen (Liste + Filter), [jobId] (Detail,
                             Termin, Storno) + actions.ts
       kunden/               Liste, neu, [id], [id]/bearbeiten + actions.ts
       anlagen/              Liste, neu, [id], [id]/bearbeiten, [id]/qr + actions.ts
     (mobile)/               Monteur-Ansichten (eigenes Layout + Bottom-Nav)
+      profil                Profil-Seite im Monteur-Layout (gleicher ProfilInhalt)
       scan                  QR-Scan (Kamera + Texteingabe-Fallback)
       anlage/[qrToken]      Anlagendetail per QR-Token
       protokoll/[jobId]     Serviceprotokoll zum Auftrag ("neu" = Spontanprotokoll)
@@ -302,8 +303,8 @@ src/
     mobile/                 qr-scanner, camera-capture, signature-pad, protokoll-form,
                             sync-liste
     shared/                 Header, Sidebar, Mobile-Nav, Login-Formular, Sign-out,
-                            Passwort-Formular, Sw-Register, Auto-Sync,
-                            Offline-Banner, Offline-Hooks
+                            Passwort-Formular, Profil-Inhalt, Sw-Register,
+                            Auto-Sync, Offline-Banner, Offline-Hooks
   lib/
     actions.ts              ActionState, Feldfehler, Unique-Erkennung (Server Actions)
     auth.ts                 Better-Auth-Instanz (lazy)

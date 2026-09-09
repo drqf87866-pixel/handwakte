@@ -49,12 +49,18 @@ Die Startseite der Anwendung fragt Sie daher zuerst: **„Anlage scannen"** (fü
 
 Ihre Zugangsdaten erhalten Sie von Ihrem Administrator. Es gibt keine Selbstregistrierung in der Anwendung.
 
-### 2.1a Passwort ändern
+### 2.1a Profil, Passwort und Abmelden
+
+Oben rechts in der Kopfzeile sehen Sie nur noch Ihr **Benutzer-Icon** (Kreis mit Ihrem Anfangsbuchstaben). Klicken Sie darauf, um Ihre **Profil-Seite** (`/profil`) zu öffnen. Dort finden Sie an einem Ort:
+
+- Ihre Konto-Info (Name, E-Mail, Rolle),
+- den Passwortwechsel,
+- die Abmelde-Schaltfläche.
 
 Ihr Passwort wechseln Sie selbst, ohne den Administrator:
 
-1. Klicken Sie in der Kopfzeile auf **„Passwort"** (Schlüssel-Symbol, neben Ihrem Namen).
-2. Geben Sie Ihr **aktuelles Passwort** sowie zweimal das **neue Passwort** ein (mindestens 8 Zeichen).
+1. Klicken Sie in der Kopfzeile auf Ihr **Benutzer-Icon**.
+2. Geben Sie im Bereich „Neues Passwort" Ihr **aktuelles Passwort** sowie zweimal das **neue Passwort** ein (mindestens 8 Zeichen).
 3. Klicken Sie auf **„Passwort ändern"**.
 4. Ergebnis: Das neue Passwort gilt sofort. Waren Sie zusätzlich auf einem anderen Gerät angemeldet (z. B. Handy und Büro-Rechner), werden die anderen Sitzungen dabei abgemeldet — melden Sie sich dort einfach neu an.
 
@@ -84,7 +90,7 @@ Auf dem Handy finden Sie unten die Daumen-Navigation mit vier Punkten:
 - **Aufträge** (`/dashboard`)
 - **Sync** (`/sync`) — ausstehende Offline-Einträge einspielen. Steht eine Zahl am Symbol, warten Einträge auf Empfang (siehe Kapitel 9.5).
 
-Zum Abmelden nutzen Sie die Abmelde-Schaltfläche in der Kopfzeile.
+Zum Abmelden klicken Sie in der Kopfzeile auf Ihr Benutzer-Icon und nutzen auf der Profil-Seite die Abmelde-Schaltfläche.
 
 ---
 

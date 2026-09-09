@@ -144,7 +144,7 @@ try {
   if (!vorgegeben) {
     console.log(`  Passwort: ${password}`);
     console.log("  Jetzt in den Passwortmanager uebernehmen - es wird nicht wieder angezeigt.");
-    console.log("  Aendern kann das Konto selbst unter /passwort in der App.\n");
+    console.log("  Aendern kann das Konto selbst unter /profil in der App.\n");
   } else {
     console.log("");
   }
