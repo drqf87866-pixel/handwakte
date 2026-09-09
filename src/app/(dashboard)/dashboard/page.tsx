@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, ilike, inArray, lte, or } from "drizzle-orm";
 import { AlertTriangle, CalendarClock, ClipboardList } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -18,6 +19,8 @@ import { customer, getDb, installation, maintenanceJob, user } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Übersicht" };
 export const dynamic = "force-dynamic";
+
+const SEITENGROESSE = 20;
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeZone: "Europe/Berlin" });
 
@@ -48,8 +51,24 @@ const FILTER = [
   { wert: "ueberfaellig", label: "Überfällig" },
 ] as const;
 
-/** Offene Wartungsaufträge, die der Cron-Lauf angelegt hat. */
-async function ladeOffeneAuftraege() {
+const OFFENE_STATUS = ["geplant", "terminiert", "ueberfaellig"] as const;
+
+/** Status- und Suchfilter als DB-Bedingung (Kunden- oder Anlagenname). */
+function filterBedingung(filter: string, q: string) {
+  const bedingungen = [inArray(maintenanceJob.status, [...OFFENE_STATUS])];
+  if (filter !== "alle") {
+    bedingungen.push(eq(maintenanceJob.status, filter as (typeof OFFENE_STATUS)[number]));
+  }
+  if (q) {
+    const muster = `%${q}%`;
+    const treffer = or(ilike(customer.name, muster), ilike(installation.bezeichnung, muster));
+    if (treffer) bedingungen.push(treffer);
+  }
+  return and(...bedingungen);
+}
+
+/** Offene Wartungsaufträge, die der Cron-Lauf angelegt hat (eine Seite). */
+async function ladeOffeneAuftraege(filter: string, q: string, offset: number) {
   return getDb()
     .select({
       id: maintenanceJob.id,
@@ -64,51 +83,109 @@ async function ladeOffeneAuftraege() {
     .innerJoin(installation, eq(installation.id, maintenanceJob.installationId))
     .innerJoin(customer, eq(customer.id, installation.customerId))
     .leftJoin(user, eq(user.id, maintenanceJob.monteurId))
-    .where(inArray(maintenanceJob.status, ["geplant", "terminiert", "ueberfaellig"]))
+    .where(filterBedingung(filter, q))
     .orderBy(asc(maintenanceJob.faelligAm))
-    .limit(50);
+    .limit(SEITENGROESSE)
+    .offset(offset);
+}
+
+async function zaehleOffeneAuftraege(filter: string, q: string) {
+  const [zeile] = await getDb()
+    .select({ anzahl: count() })
+    .from(maintenanceJob)
+    .innerJoin(installation, eq(installation.id, maintenanceJob.installationId))
+    .innerJoin(customer, eq(customer.id, installation.customerId))
+    .where(filterBedingung(filter, q));
+  return zeile?.anzahl ?? 0;
+}
+
+/**
+ * Kennzahlen ueber alle offenen Auftraege (nicht nur die aktuelle Seite),
+ * damit sie bei Suche und Pagination nicht luegen.
+ */
+async function ladeKennzahlen() {
+  const grenze = new Date(Date.now() + 30 * 86_400_000);
+  const [offen, ueberfaellig, bald] = await Promise.all([
+    getDb()
+      .select({ anzahl: count() })
+      .from(maintenanceJob)
+      .where(inArray(maintenanceJob.status, [...OFFENE_STATUS])),
+    getDb()
+      .select({ anzahl: count() })
+      .from(maintenanceJob)
+      .where(eq(maintenanceJob.status, "ueberfaellig")),
+    getDb()
+      .select({ anzahl: count() })
+      .from(maintenanceJob)
+      .where(
+        and(
+          inArray(maintenanceJob.status, ["geplant", "terminiert"]),
+          lte(maintenanceJob.faelligAm, grenze),
+        ),
+      ),
+  ]);
+  return {
+    offen: offen[0]?.anzahl ?? 0,
+    ueberfaellig: ueberfaellig[0]?.anzahl ?? 0,
+    baldFaellig: bald[0]?.anzahl ?? 0,
+  };
+}
+
+function dashboardHref(filter: string, q: string, seite: number) {
+  const params = new URLSearchParams();
+  if (filter !== "alle") params.set("status", filter);
+  if (q) params.set("q", q);
+  if (seite > 1) params.set("seite", String(seite));
+  const query = params.toString();
+  return query ? `/dashboard?${query}` : "/dashboard";
 }
 
 export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
-  const { status } = await searchParams;
-  const filter = typeof status === "string" && status !== "alle" ? status : "alle";
+  const params = await searchParams;
+  const rohStatus = typeof params.status === "string" ? params.status : "alle";
+  const filter = FILTER.some((f) => f.wert === rohStatus) ? rohStatus : "alle";
+  const q = typeof params.q === "string" ? params.q.trim() : "";
+  const gewuenscht =
+    typeof params.seite === "string" ? Number.parseInt(params.seite, 10) : 1;
 
   let auftraege: Awaited<ReturnType<typeof ladeOffeneAuftraege>> = [];
+  let gesamt = 0;
+  let seite = 1;
+  let seiten = 1;
+  let kennzahlenWerte = { offen: 0, ueberfaellig: 0, baldFaellig: 0 };
   let fehler: string | null = null;
 
   try {
-    auftraege = await ladeOffeneAuftraege();
+    [gesamt, kennzahlenWerte] = await Promise.all([
+      zaehleOffeneAuftraege(filter, q),
+      ladeKennzahlen(),
+    ]);
+    seiten = Math.max(1, Math.ceil(gesamt / SEITENGROESSE));
+    seite = Number.isInteger(gewuenscht) && gewuenscht > 0 ? Math.min(gewuenscht, seiten) : 1;
+    auftraege = await ladeOffeneAuftraege(filter, q, (seite - 1) * SEITENGROESSE);
   } catch (error) {
     // Ohne konfigurierte Datenbank soll die Seite trotzdem rendern.
     fehler = error instanceof Error ? error.message : String(error);
   }
 
-  const gefiltert = filter === "alle" ? auftraege : auftraege.filter((a) => a.status === filter);
-
   const jetzt = new Date().getTime();
-  const ueberfaellig = auftraege.filter((a) => a.status === "ueberfaellig").length;
-  const baldFaellig = auftraege.filter(
-    (a) =>
-      a.status !== "ueberfaellig" &&
-      a.faelligAm.getTime() - jetzt <= 30 * 86_400_000,
-  ).length;
 
   const kennzahlen = [
     {
       label: "Überfällig",
-      wert: ueberfaellig,
+      wert: kennzahlenWerte.ueberfaellig,
       icon: AlertTriangle,
       iconKlasse: "bg-destructive/10 text-destructive",
     },
     {
       label: "Fällig in 30 Tagen",
-      wert: baldFaellig,
+      wert: kennzahlenWerte.baldFaellig,
       icon: CalendarClock,
       iconKlasse: "bg-primary/10 text-primary",
     },
     {
       label: "Offen gesamt",
-      wert: auftraege.length,
+      wert: kennzahlenWerte.offen,
       icon: ClipboardList,
       iconKlasse: "bg-muted text-muted-foreground",
     },
@@ -141,6 +218,24 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         ))}
       </div>
 
+      <form method="get" action="/dashboard" className="flex flex-wrap gap-2">
+        {filter !== "alle" ? <input type="hidden" name="status" value={filter} /> : null}
+        <Input
+          name="q"
+          defaultValue={q}
+          placeholder="Kunde oder Anlage suchen …"
+          className="max-w-xs"
+        />
+        <Button type="submit" variant="secondary" size="sm">
+          Suchen
+        </Button>
+        {q ? (
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={dashboardHref(filter, "", 1)}>Zurücksetzen</Link>
+          </Button>
+        ) : null}
+      </form>
+
       <div className="flex flex-wrap gap-2">
         {FILTER.map(({ wert, label }) =>
           filter === wert ? (
@@ -149,9 +244,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             </Button>
           ) : (
             <Button key={wert} variant="outline" size="sm" asChild>
-              <Link href={wert === "alle" ? "/dashboard" : `/dashboard?status=${wert}`}>
-                {label}
-              </Link>
+              <Link href={dashboardHref(wert, q, 1)}>{label}</Link>
             </Button>
           ),
         )}
@@ -163,65 +256,88 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <p className="text-destructive text-sm">Datenbank nicht erreichbar: {fehler}</p>
           </CardContent>
         </Card>
-      ) : gefiltert.length === 0 ? (
+      ) : auftraege.length === 0 ? (
         <Card size="sm">
           <CardContent>
             <p className="text-muted-foreground text-sm">
-              {auftraege.length === 0
+              {gesamt === 0 && !q && filter === "alle"
                 ? "Aktuell keine offenen Wartungsaufträge. Sobald der tägliche Scan fällige Anlagen findet, erscheinen sie hier."
-                : "Kein Auftrag mit diesem Status. Filter oben zurücksetzen, um alle zu sehen."}
+                : "Keine Aufträge für diese Auswahl. Filter oder Suche zurücksetzen, um alle zu sehen."}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <Card className="gap-0 overflow-x-auto py-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fällig</TableHead>
-                <TableHead>Kunde</TableHead>
-                <TableHead>Anlage</TableHead>
-                <TableHead>Termin</TableHead>
-                <TableHead>Monteur</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {gefiltert.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="whitespace-nowrap">
-                    <span className="font-medium">{dateFmt.format(a.faelligAm)}</span>{" "}
-                    <span className="text-muted-foreground text-xs">
-                      {relativerAbstand(a.faelligAm, jetzt)}
-                    </span>
-                  </TableCell>
-                  <TableCell>{a.kunde}</TableCell>
-                  <TableCell>
-                    <Link
-                      href={`/dashboard/${a.id}`}
-                      className="underline-offset-4 hover:underline"
-                    >
-                      {a.anlage}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap">
-                    {a.terminAm ? dateFmt.format(a.terminAm) : "–"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{a.monteur ?? "–"}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        STATUS_VARIANT[a.status as keyof typeof STATUS_VARIANT] ?? "secondary"
-                      }
-                    >
-                      {STATUS_LABEL[a.status] ?? a.status}
-                    </Badge>
-                  </TableCell>
+        <>
+          <Card className="gap-0 py-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fällig</TableHead>
+                  <TableHead>Kunde</TableHead>
+                  <TableHead>Anlage</TableHead>
+                  <TableHead className="hidden sm:table-cell">Termin</TableHead>
+                  <TableHead className="hidden lg:table-cell">Monteur</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {auftraege.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell className="whitespace-nowrap">
+                      <span className="block font-medium">{dateFmt.format(a.faelligAm)}</span>
+                      <span className="text-muted-foreground block text-xs">
+                        {relativerAbstand(a.faelligAm, jetzt)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="min-w-0">{a.kunde}</TableCell>
+                    <TableCell className="min-w-0">
+                      <Link
+                        href={`/dashboard/${a.id}`}
+                        className="font-medium break-words underline-offset-4 hover:underline"
+                      >
+                        {a.anlage}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden whitespace-nowrap sm:table-cell">
+                      {a.terminAm ? dateFmt.format(a.terminAm) : "–"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden max-w-32 truncate lg:table-cell">
+                      {a.monteur ?? "–"}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Badge
+                        variant={
+                          STATUS_VARIANT[a.status as keyof typeof STATUS_VARIANT] ?? "secondary"
+                        }
+                      >
+                        {STATUS_LABEL[a.status] ?? a.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+          {seiten > 1 ? (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-muted-foreground text-sm tabular-nums">
+                Seite {seite} von {seiten} · {gesamt} Aufträge
+              </p>
+              <div className="flex gap-2">
+                {seite > 1 ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={dashboardHref(filter, q, seite - 1)}>Zurück</Link>
+                  </Button>
+                ) : null}
+                {seite < seiten ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={dashboardHref(filter, q, seite + 1)}>Weiter</Link>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

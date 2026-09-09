@@ -79,6 +79,7 @@ async function ladeProtokolle(anlageId: string) {
       durchgefuehrtAm: serviceReport.durchgefuehrtAm,
       taetigkeiten: serviceReport.taetigkeiten,
       maengel: serviceReport.maengel,
+      empfehlungen: serviceReport.empfehlungen,
     })
     .from(serviceReport)
     .where(eq(serviceReport.installationId, anlageId))
@@ -218,8 +219,8 @@ export default async function AnlageDetailPage({ params }: PageProps<"/anlagen/[
               <TableHeader>
                 <TableRow>
                   <TableHead>Fällig</TableHead>
-                  <TableHead>Termin</TableHead>
-                  <TableHead>Monteur</TableHead>
+                  <TableHead className="hidden sm:table-cell">Termin</TableHead>
+                  <TableHead className="hidden md:table-cell">Monteur</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -234,11 +235,11 @@ export default async function AnlageDetailPage({ params }: PageProps<"/anlagen/[
                         {dateFmt.format(a.faelligAm)}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                    <TableCell className="text-muted-foreground hidden whitespace-nowrap sm:table-cell">
                       {a.terminAm ? dateFmt.format(a.terminAm) : "–"}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{a.monteur ?? "–"}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-muted-foreground hidden max-w-32 truncate md:table-cell">{a.monteur ?? "–"}</TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <Badge variant={STATUS_VARIANT[a.status] ?? "secondary"}>
                         {STATUS_LABEL[a.status] ?? a.status}
                       </Badge>
@@ -269,19 +270,23 @@ export default async function AnlageDetailPage({ params }: PageProps<"/anlagen/[
                   <TableHead>Durchgeführt</TableHead>
                   <TableHead>Tätigkeiten</TableHead>
                   <TableHead>Mängel</TableHead>
+                  <TableHead>Empfehlungen</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {protokolle.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell className="whitespace-nowrap align-top">
                       {dateFmt.format(p.durchgefuehrtAm)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground whitespace-normal">
+                    <TableCell className="text-muted-foreground min-w-0 align-top break-words whitespace-normal">
                       {p.taetigkeiten ?? "–"}
                     </TableCell>
-                    <TableCell className="text-muted-foreground whitespace-normal">
+                    <TableCell className="text-muted-foreground min-w-0 align-top break-words whitespace-normal">
                       {p.maengel ?? "–"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground min-w-0 align-top break-words whitespace-normal">
+                      {p.empfehlungen ?? "–"}
                     </TableCell>
                   </TableRow>
                 ))}

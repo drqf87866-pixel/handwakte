@@ -41,6 +41,7 @@ export const protokollSchema = z.object({
   arbeitszeit: optionaleZahl(1, 1440),
   taetigkeiten: optionalerText,
   maengel: optionalerText,
+  empfehlungen: optionalerText,
   unterschriftName: optionalerText,
   /**
    * Kommagetrennte Attachment-IDs aus dieser Formularsitzung (Fotos und
@@ -165,6 +166,7 @@ export async function protokollAbschliessenKern(
       messwerte: Object.keys(messwerte).length > 0 ? messwerte : null,
       taetigkeiten: daten.taetigkeiten,
       maengel: daten.maengel,
+      empfehlungen: daten.empfehlungen,
       unterschriftName: daten.unterschriftName,
     });
   } catch (error) {
@@ -263,6 +265,7 @@ export async function protokollAbschliessenKern(
         durchgefuehrtAm: jetzt,
         monteur: monteur.name,
         maengel: daten.maengel,
+        empfehlungen: daten.empfehlungen,
       });
     } catch (error) {
       console.error("[protokoll] Bestaetigungsmail fehlgeschlagen", error);

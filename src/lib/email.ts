@@ -162,6 +162,7 @@ export type ServiceReportMail = {
   durchgefuehrtAm: Date;
   monteur?: string | null;
   maengel?: string | null;
+  empfehlungen?: string | null;
 };
 
 /** Bestaetigung an den Kunden nach abgeschlossenem Service. */
@@ -171,6 +172,7 @@ export async function sendServiceReportEmail(input: ServiceReportMail) {
     ["Durchgefuehrt am", dateFmt.format(input.durchgefuehrtAm)],
     ["Monteur", input.monteur ?? "-"],
     ["Festgestellte Maengel", input.maengel?.trim() || "keine"],
+    ["Empfehlungen", input.empfehlungen?.trim() || "keine"],
   ];
 
   return send({

@@ -79,6 +79,7 @@ async function ladeProtokolle(jobId: string) {
       durchgefuehrtAm: serviceReport.durchgefuehrtAm,
       taetigkeiten: serviceReport.taetigkeiten,
       maengel: serviceReport.maengel,
+      empfehlungen: serviceReport.empfehlungen,
     })
     .from(serviceReport)
     .where(eq(serviceReport.jobId, jobId))
@@ -216,19 +217,23 @@ export default async function AuftragDetailPage({ params }: PageProps<"/dashboar
                   <TableHead>Durchgeführt</TableHead>
                   <TableHead>Tätigkeiten</TableHead>
                   <TableHead>Mängel</TableHead>
+                  <TableHead>Empfehlungen</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {protokolle.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell className="whitespace-nowrap align-top">
                       {dateFmt.format(p.durchgefuehrtAm)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground whitespace-normal">
+                    <TableCell className="text-muted-foreground min-w-0 align-top break-words whitespace-normal">
                       {p.taetigkeiten ?? "–"}
                     </TableCell>
-                    <TableCell className="text-muted-foreground whitespace-normal">
+                    <TableCell className="text-muted-foreground min-w-0 align-top break-words whitespace-normal">
                       {p.maengel ?? "–"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground min-w-0 align-top break-words whitespace-normal">
+                      {p.empfehlungen ?? "–"}
                     </TableCell>
                   </TableRow>
                 ))}

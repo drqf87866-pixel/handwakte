@@ -159,6 +159,7 @@ export function ProtokollForm({
         arbeitszeit,
         taetigkeiten: text("taetigkeiten"),
         maengel: text("maengel"),
+        empfehlungen: text("empfehlungen"),
         unterschriftName: text("unterschriftName"),
       },
       anlageName,
@@ -277,6 +278,15 @@ export function ProtokollForm({
               name="maengel"
               rows={3}
               placeholder="Leer lassen, wenn keine Mängel vorliegen"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="empfehlungen">Empfehlungen</Label>
+            <Textarea
+              id="empfehlungen"
+              name="empfehlungen"
+              rows={3}
+              placeholder="z. B. Filter naechstes Mal tauschen, Angebot folgt"
             />
           </div>
         </CardContent>

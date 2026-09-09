@@ -182,9 +182,11 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   im Dev-Betrieb kommt bei anderen Adressen real keine Mail an.
 - **Dashboard (`/dashboard`, `/dashboard/[jobId]`):** offene
   Wartungsauftraege (`geplant`, `terminiert`, `ueberfaellig`), sortiert nach
-  Faelligkeit, maximal 50 Zeilen, mit Statusfilter (Alle/Geplant/Terminiert/
-  Ueberfaellig). Kennzahlen oben: Ueberfaellig, Faellig in 30 Tagen, Offen
-  gesamt. Relative Angaben wie "heute", "morgen", "in 10 Tagen", "seit 3 Tagen".
+  Faelligkeit, 20 Zeilen je Seite mit Pagination, mit Statusfilter (Alle/Geplant/Terminiert/
+  Ueberfaellig) und Suche ueber Kunden- und Anlagennamen (`?q=`, `?seite=`).
+  Kennzahlen oben: Ueberfaellig, Faellig in 30 Tagen, Offen
+  gesamt - per Count-Queries ueber alle offenen Auftraege, damit sie bei
+  Suche und Pagination nicht luegen. Relative Angaben wie "heute", "morgen", "in 10 Tagen", "seit 3 Tagen".
   Auftraege legt der taegliche Scan in `src/lib/jobs/maintenance.ts` an
   (30 Tage Vorlauf, idempotent). Die Detailseite zeigt Termin, Monteur, Notiz
   und Protokolle zum Auftrag und bietet zwei Server Actions in
@@ -194,12 +196,15 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   `storniert` sind Endzustaende). Ein Button fuehrt direkt zum
   Serviceprotokoll (`/protokoll/[jobId]`).
 - **Kunden (`/kunden`, `/neu`, `/[id]`, `/[id]/bearbeiten`):** CRUD ueber
-  Server Actions in `src/app/(dashboard)/kunden/actions.ts`. Loeschen nur ohne
+  Server Actions in `src/app/(dashboard)/kunden/actions.ts`. Liste mit Suche
+  (Name, Kundennummer, Ansprechpartner, Ort) und Pagination (20 je Seite).
+  Loeschen nur ohne
   Anlagen: die Action blockiert, solange Anlagen am Kunden haengen - sonst
   wuerden Auftraege, Protokolle und Attachment-Metadaten per
   `onDelete: cascade` mitgeloescht und R2-Objekte verwaist zurueckbleiben.
 - **Anlagen (`/anlagen`, analog + `/[id]/qr`):** CRUD ueber
-  `src/app/(dashboard)/anlagen/actions.ts`. `qrToken` wird per
+  `src/app/(dashboard)/anlagen/actions.ts`. Liste mit Suche (Bezeichnung,
+  Kundenname, Standort, Ort) und Pagination (20 je Seite). `qrToken` wird per
   `generateQrToken()` erzeugt und bleibt nach dem Anlegen unveraenderlich (der
   Aufkleber klebt bereits). `/anlagen/[id]/qr` ist die Druckansicht fuer den
   Aufkleber. Es gibt keinen Loesch-Endpunkt - stattdessen Deaktivieren via
@@ -214,9 +219,9 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   `/protokoll/neu?installation=...`):** QR-Scan per Kamera (`QrScanner`:
   nativ per BarcodeDetector, jsQR-Fallback fuer Safari/iPhone, manuelle
   Token-Eingabe als Ausweg; fremde QR-Codes werden ignoriert), Anlagendetail
-  mit direktem Foto-Upload, Protokollformular mit Messwerten (Abgastemp.,
+  mit direktem Foto-Upload,   Protokollformular mit Messwerten (Abgastemp.,
   CO2, Druck - Komma-Eingabe wird normalisiert), Arbeitszeit, Taetigkeiten,
-  Maengeln, Fotos und Unterschrift. Das Absenden laeuft ueber die Server
+  Maengeln, Empfehlungen (z. B. Angebotshinweise), Fotos und Unterschrift. Das Absenden laeuft ueber die Server
   Action `protokollAbschliessen` in `src/app/(mobile)/protokoll/actions.ts`:
   Sie schreibt `service_report`, verknuepft nur die Attachments dieser Sitzung
   (gleiche Anlage, noch ohne Report; Signatur-Key wird serverseitig aus der

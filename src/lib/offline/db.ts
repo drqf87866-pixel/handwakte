@@ -38,6 +38,7 @@ export type OfflineProtokollDaten = {
   arbeitszeit: number | null;
   taetigkeiten: string | null;
   maengel: string | null;
+  empfehlungen: string | null;
   unterschriftName: string | null;
 };
 

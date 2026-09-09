@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { asc, count, eq } from "drizzle-orm";
+import { asc, count, eq, ilike, or } from "drizzle-orm";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -18,7 +19,20 @@ import { customer, getDb, installation } from "@/lib/db";
 export const metadata: Metadata = { title: "Kunden" };
 export const dynamic = "force-dynamic";
 
-async function ladeKunden() {
+const SEITENGROESSE = 20;
+
+/** Sucht in Name, Kundennummer, Ansprechpartner und Ort. */
+function suchBedingung(q: string) {
+  const muster = `%${q}%`;
+  return or(
+    ilike(customer.name, muster),
+    ilike(customer.kundennummer, muster),
+    ilike(customer.ansprechpartner, muster),
+    ilike(customer.ort, muster),
+  );
+}
+
+async function ladeKunden(q: string, offset: number) {
   return getDb()
     .select({
       id: customer.id,
@@ -30,16 +44,46 @@ async function ladeKunden() {
     })
     .from(customer)
     .leftJoin(installation, eq(installation.customerId, customer.id))
+    .where(q ? suchBedingung(q) : undefined)
     .groupBy(customer.id)
-    .orderBy(asc(customer.name));
+    .orderBy(asc(customer.name))
+    .limit(SEITENGROESSE)
+    .offset(offset);
 }
 
-export default async function KundenPage() {
+async function zaehleKunden(q: string) {
+  const [zeile] = await getDb()
+    .select({ anzahl: count() })
+    .from(customer)
+    .where(q ? suchBedingung(q) : undefined);
+  return zeile?.anzahl ?? 0;
+}
+
+function seitenHref(q: string, seite: number) {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (seite > 1) params.set("seite", String(seite));
+  const query = params.toString();
+  return query ? `/kunden?${query}` : "/kunden";
+}
+
+export default async function KundenPage({ searchParams }: PageProps<"/kunden">) {
+  const params = await searchParams;
+  const q = typeof params.q === "string" ? params.q.trim() : "";
+  const gewuenscht =
+    typeof params.seite === "string" ? Number.parseInt(params.seite, 10) : 1;
+
   let kunden: Awaited<ReturnType<typeof ladeKunden>> = [];
+  let gesamt = 0;
+  let seite = 1;
+  let seiten = 1;
   let fehler: string | null = null;
 
   try {
-    kunden = await ladeKunden();
+    gesamt = await zaehleKunden(q);
+    seiten = Math.max(1, Math.ceil(gesamt / SEITENGROESSE));
+    seite = Number.isInteger(gewuenscht) && gewuenscht > 0 ? Math.min(gewuenscht, seiten) : 1;
+    kunden = await ladeKunden(q, (seite - 1) * SEITENGROESSE);
   } catch (error) {
     // Ohne konfigurierte Datenbank soll die Seite trotzdem rendern.
     fehler = error instanceof Error ? error.message : String(error);
@@ -51,9 +95,9 @@ export default async function KundenPage() {
         <div>
           <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight">
             Kunden
-            {!fehler && kunden.length > 0 ? (
+            {!fehler && gesamt > 0 ? (
               <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium tabular-nums">
-                {kunden.length}
+                {gesamt}
               </span>
             ) : null}
           </h1>
@@ -69,6 +113,23 @@ export default async function KundenPage() {
         </Button>
       </div>
 
+      <form method="get" action="/kunden" className="flex flex-wrap gap-2">
+        <Input
+          name="q"
+          defaultValue={q}
+          placeholder="Name, Nummer oder Ort suchen …"
+          className="max-w-xs"
+        />
+        <Button type="submit" variant="secondary" size="sm">
+          Suchen
+        </Button>
+        {q ? (
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/kunden">Zurücksetzen</Link>
+          </Button>
+        ) : null}
+      </form>
+
       {fehler ? (
         <Card size="sm">
           <CardContent>
@@ -79,49 +140,71 @@ export default async function KundenPage() {
         <Card size="sm">
           <CardContent>
             <p className="text-muted-foreground text-sm">
-              Noch keine Kunden angelegt. Legen Sie den ersten Kunden an, um Anlagen zu
-              verwalten.
+              {q
+                ? `Keine Kunden für „${q}" gefunden. Suche anpassen oder zurücksetzen.`
+                : "Noch keine Kunden angelegt. Legen Sie den ersten Kunden an, um Anlagen zu verwalten."}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <Card className="gap-0 py-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Kundennummer</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Ansprechpartner</TableHead>
-                <TableHead>Ort</TableHead>
-                <TableHead className="text-right">Anlagen</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {kunden.map((k) => (
-                <TableRow key={k.id}>
-                  <TableCell className="whitespace-nowrap">
-                    <Link
-                      href={`/kunden/${k.id}`}
-                      className="bg-muted rounded-md px-1.5 py-0.5 font-mono text-xs underline-offset-4 hover:underline"
-                    >
-                      {k.kundennummer}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <Link href={`/kunden/${k.id}`} className="underline-offset-4 hover:underline">
-                      {k.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {k.ansprechpartner ?? "–"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{k.ort ?? "–"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{k.anlagen}</TableCell>
+        <>
+          <Card className="gap-0 py-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kundennummer</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="hidden md:table-cell">Ansprechpartner</TableHead>
+                  <TableHead className="hidden md:table-cell">Ort</TableHead>
+                  <TableHead className="text-right">Anlagen</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {kunden.map((k) => (
+                  <TableRow key={k.id}>
+                    <TableCell className="whitespace-nowrap">
+                      <Link
+                        href={`/kunden/${k.id}`}
+                        className="bg-muted rounded-md px-1.5 py-0.5 font-mono text-xs underline-offset-4 hover:underline"
+                      >
+                        {k.kundennummer}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="min-w-0 font-medium">
+                      <Link href={`/kunden/${k.id}`} className="break-words underline-offset-4 hover:underline">
+                        {k.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden max-w-44 truncate md:table-cell">
+                      {k.ansprechpartner ?? "–"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden max-w-36 truncate md:table-cell">{k.ort ?? "–"}</TableCell>
+                    <TableCell className="text-right whitespace-nowrap tabular-nums">{k.anlagen}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+          {seiten > 1 ? (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-muted-foreground text-sm tabular-nums">
+                Seite {seite} von {seiten} · {gesamt} Kunden
+              </p>
+              <div className="flex gap-2">
+                {seite > 1 ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={seitenHref(q, seite - 1)}>Zurück</Link>
+                  </Button>
+                ) : null}
+                {seite < seiten ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={seitenHref(q, seite + 1)}>Weiter</Link>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

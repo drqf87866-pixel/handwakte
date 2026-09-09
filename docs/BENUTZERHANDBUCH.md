@@ -133,7 +133,11 @@ Darunter steht die Tabelle mit den Spalten:
   - **Geplant** (grau)
   - **Terminiert** (Umriss)
 
-Die Liste ist nach Fälligkeit sortiert und zeigt maximal 50 Einträge.
+Die Liste ist nach Fälligkeit sortiert und zeigt 20 Einträge je Seite — bei mehr Treffern blättern Sie unten mit **„Zurück"** und **„Weiter"** (mit Seiten- und Trefferzahl, z. B. „Seite 1 von 3 · 45 Aufträge").
+
+Über das **Suchfeld** grenzen Sie die Liste auf Kunden- oder Anlagennamen ein. Die Suche lässt sich mit den Statusfiltern kombinieren; mit **„Zurücksetzen"** löschen Sie den Suchbegriff wieder. Die Kennzahlen oben zählen immer alle offenen Aufträge, unabhängig von Suche und Seite.
+
+Hinweis: Auf schmalen Bildschirmen blendet die Tabelle zuerst die Spalten Termin und Monteur aus, damit kein horizontales Scrollen noetig ist. Alle Angaben stehen weiterhin auf der Auftragsdetailseite.
 
 ### 3.3 Auftrag öffnen, terminieren und stornieren
 
@@ -175,6 +179,10 @@ Die Tabelle enthält:
 
 Klicken Sie auf Kundennummer oder Name, um die Kundendetails zu öffnen.
 
+Über das **Suchfeld** suchen Sie in Name, Kundennummer, Ansprechpartner und Ort. Bei mehr als 20 Treffern blättern Sie unten mit **„Zurück"** und **„Weiter"**; mit **„Zurücksetzen"** löschen Sie den Suchbegriff wieder.
+
+Hinweis: Auf schmalen Bildschirmen blendet die Tabelle zuerst Ansprechpartner und Ort aus, damit kein horizontales Scrollen noetig ist. Alle Angaben stehen weiterhin auf der Kundendetailseite.
+
 Noch keine Kunden? Dann steht dort: „Noch keine Kunden angelegt. Legen Sie den ersten Kunden an, um Anlagen zu verwalten."
 
 ### 4.2 Neuen Kunden anlegen (`/kunden/neu`)
@@ -204,7 +212,7 @@ Oben stehen Name und Kundennummer. Rechts finden Sie drei Aktionen:
 
 Darunter sehen Sie die **Stammdaten** (Kundennummer, Ansprechpartner, E-Mail, Telefon, Straße, PLZ / Ort) sowie ggf. Ihre Notizen.
 
-Ganz unten steht die Liste **„Anlagen"** dieses Kunden mit Bezeichnung (anklickbar), Standort, nächster Wartung und Status (**Aktiv** / **Inaktiv**). Gibt es noch keine, steht dort: „Noch keine Anlagen für diesen Kunden."
+Ganz unten steht die Liste **„Anlagen"** dieses Kunden mit Bezeichnung (anklickbar), Standort, nächster Wartung und Status (**Aktiv** / **Inaktiv**). Gibt es noch keine, steht dort: „Noch keine Anlagen für diesen Kunden." Auf schmalen Bildschirmen wird zuerst der Standort ausgeblendet, damit kein horizontales Scrollen noetig ist.
 
 ### 4.4 Kunden bearbeiten (`/kunden/[id]/bearbeiten`)
 
@@ -246,7 +254,11 @@ Die Tabelle enthält:
   - **Überfällig** (rot) — aktiv und Fälligkeitsdatum liegt in der Vergangenheit.
   - **Inaktiv** (Umriss) — deaktiviert, wird vom Wartungs-Scan übersprungen.
 
+Hinweis: Auf schmalen Bildschirmen blendet die Tabelle zuerst Standort und Intervall aus, damit kein horizontales Scrollen noetig ist. Alle Angaben stehen weiterhin auf der Anlagendetailseite.
+
 Noch keine Anlagen? Dann steht dort: „Noch keine Anlagen angelegt. Legen Sie die erste Anlage an, damit der Wartungs-Scan sie erfassen kann."
+
+Über das **Suchfeld** suchen Sie in Bezeichnung, Kundenname, Standort und Ort. Bei mehr als 20 Treffern blättern Sie unten mit **„Zurück"** und **„Weiter"**; mit **„Zurücksetzen"** löschen Sie den Suchbegriff wieder.
 
 ### 5.2 Neue Anlage anlegen (`/anlagen/neu`)
 
@@ -296,8 +308,8 @@ Darunter sehen Sie zwei Karten:
 
 Ganz unten stehen zwei Verläufe (jeweils die letzten 10 Einträge):
 
-- **Wartungsaufträge** mit Fällig, Termin, Monteur und Status (**Überfällig**, **Geplant**, **Terminiert**, **Erledigt**, **Storniert**). Das Fälligkeitsdatum ist anklickbar und führt zur Auftragsdetailseite (siehe Kapitel 3.3). Gibt es noch keine, steht dort: „Noch keine Aufträge. Der tägliche Scan legt sie an, sobald die nächste Wartung innerhalb des Vorlaufs liegt."
-- **Protokolle** mit Durchgeführt, Tätigkeiten und Mängeln. Gibt es noch keine, steht dort: „Noch keine Serviceprotokolle erfasst."
+- **Wartungsaufträge** mit Fällig, Termin, Monteur und Status (**Überfällig**, **Geplant**, **Terminiert**, **Erledigt**, **Storniert**). Das Fälligkeitsdatum ist anklickbar und führt zur Auftragsdetailseite (siehe Kapitel 3.3). Auf schmalen Bildschirmen werden zuerst Termin und Monteur ausgeblendet, damit kein horizontales Scrollen noetig ist. Gibt es noch keine, steht dort: „Noch keine Aufträge. Der tägliche Scan legt sie an, sobald die nächste Wartung innerhalb des Vorlaufs liegt."
+- **Protokolle** mit Durchgeführt, Tätigkeiten, Mängeln und Empfehlungen. Gibt es noch keine, steht dort: „Noch keine Serviceprotokolle erfasst."
 
 Ist die Anlage deaktiviert, erscheint zusätzlich der Hinweis: „Diese Anlage ist deaktiviert und wird vom täglichen Wartungs-Scan übersprungen."
 
@@ -407,6 +419,16 @@ Die Karte **„Messwerte"** enthält vier Felder:
 
 Tragen Sie die Werte so ein, wie Sie sie gemessen haben. Alle Felder sind derzeit optional — lassen Sie weg, was Sie nicht gemessen haben.
 
+### 9.1a Tätigkeiten, Mängel und Empfehlungen
+
+Die Karte **„Tätigkeiten & Mängel"** enthält drei freie Textfelder:
+
+- **Durchgeführte Tätigkeiten** — was Sie getan haben (z. B. „Brenner gereinigt, Filter getauscht").
+- **Festgestellte Mängel** — was defekt oder auffällig ist. Leer lassen, wenn keine Mängel vorliegen.
+- **Empfehlungen** — was Sie dem Kunden für die Zukunft raten (z. B. „Filter nächstes Mal tauschen, Angebot folgt"). Das Büro sieht die Empfehlungen im Protokoll und kann daraus Folgeaufträge oder Angebote ableiten.
+
+Alle drei Felder sind optional. Liegt kein Empfang vor, werden sie wie der Rest des Protokolls zunächst auf dem Gerät zwischengespeichert und später synchronisiert (siehe Kapitel 9.5).
+
 ### 9.2 Fotos im Protokoll
 
 Die Karte **„Fotos"** enthält dieselbe Funktion **„Foto aufnehmen"** wie in Kapitel 8.2. Nutzen Sie sie für Typenschilder, Mängel oder die fertige Arbeit.
@@ -425,7 +447,7 @@ Klappt das Speichern nicht, erscheint z. B. „Unterschrift konnte nicht gespeic
 
 ### 9.4 Abschließen
 
-Ganz unten steht die große Schaltfläche **„Protokoll abschließen"**. Tippen Sie darauf, wenn Messwerte, Fotos und Unterschrift vollständig sind:
+Ganz unten steht die große Schaltfläche **„Protokoll abschließen"**. Tippen Sie darauf, wenn Messwerte, Tätigkeiten, Mängel, Empfehlungen, Fotos und Unterschrift vollständig sind:
 
 1. Während des Speicherns steht dort „Wird gespeichert …".
 2. Ergebnis: Das Protokoll wird als offizieller Servicebericht abgelegt, der Auftrag auf „Erledigt" gesetzt, die nächste Wartung um das Intervall fortgeschrieben und Sie landen zurück in der Bauakte der Anlage.

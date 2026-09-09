@@ -94,6 +94,7 @@ export async function jetztSynchronisieren(): Promise<SyncBericht> {
           arbeitszeit: zahlAlsText(protokoll.daten.arbeitszeit),
           taetigkeiten: textAlsText(protokoll.daten.taetigkeiten),
           maengel: textAlsText(protokoll.daten.maengel),
+          empfehlungen: textAlsText(protokoll.daten.empfehlungen),
           unterschriftName: textAlsText(protokoll.daten.unterschriftName),
           attachmentIds,
         }),

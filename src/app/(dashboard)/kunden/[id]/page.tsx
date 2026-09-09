@@ -136,7 +136,7 @@ export default async function KundeDetailPage({ params }: PageProps<"/kunden/[id
               <TableHeader>
                 <TableRow>
                   <TableHead>Bezeichnung</TableHead>
-                  <TableHead>Standort</TableHead>
+                  <TableHead className="hidden sm:table-cell">Standort</TableHead>
                   <TableHead>Nächste Wartung</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -144,16 +144,16 @@ export default async function KundeDetailPage({ params }: PageProps<"/kunden/[id
               <TableBody>
                 {anlagen.map((a) => (
                   <TableRow key={a.id}>
-                    <TableCell className="font-medium">
-                      <Link href={`/anlagen/${a.id}`} className="underline-offset-4 hover:underline">
+                    <TableCell className="min-w-0 font-medium">
+                      <Link href={`/anlagen/${a.id}`} className="break-words underline-offset-4 hover:underline">
                         {a.bezeichnung}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{a.standort ?? "–"}</TableCell>
+                    <TableCell className="text-muted-foreground hidden max-w-44 truncate sm:table-cell">{a.standort ?? "–"}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {a.naechsteWartungAm ? dateFmt.format(a.naechsteWartungAm) : "–"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <Badge variant={a.aktiv ? "secondary" : "outline"}>
                         {a.aktiv ? "Aktiv" : "Inaktiv"}
                       </Badge>
