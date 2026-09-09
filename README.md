@@ -276,13 +276,13 @@ src/
     page.tsx                Landing: Wahl zwischen Scan und Dashboard
     (auth)/login            Login
     (dashboard)/            Buero-Ansichten (Session-Guard im Layout)
-      profil/               Konto-Info, Passwortwechsel, Abmelden (ProfilInhalt)
+      profil/               Konto-Info, Passwortwechsel, Abmelden (ProfilInhalt;
+                              eine Route fuer beide Layouts)
       dashboard/            Offene Wartungen (Liste + Filter), [jobId] (Detail,
                             Termin, Storno) + actions.ts
       kunden/               Liste, neu, [id], [id]/bearbeiten + actions.ts
       anlagen/              Liste, neu, [id], [id]/bearbeiten, [id]/qr + actions.ts
     (mobile)/               Monteur-Ansichten (eigenes Layout + Bottom-Nav)
-      profil                Profil-Seite im Monteur-Layout (gleicher ProfilInhalt)
       scan                  QR-Scan (Kamera + Texteingabe-Fallback)
       anlage/[qrToken]      Anlagendetail per QR-Token
       protokoll/[jobId]     Serviceprotokoll zum Auftrag ("neu" = Spontanprotokoll)
