@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { Camera, ClipboardList } from "lucide-react";
+import { desc, eq } from "drizzle-orm";
+import { Camera, ClipboardList, FileText } from "lucide-react";
 
 import { CameraCapture } from "@/components/mobile/camera-capture";
 import { OfflineBanner } from "@/components/shared/offline-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { customer, getDb, installation } from "@/lib/db";
+import { attachment, customer, getDb, installation } from "@/lib/db";
+import { objectUrl } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +37,27 @@ async function ladeAnlage(qrToken: string) {
   return row;
 }
 
+async function ladeDateien(anlageId: string) {
+  return getDb()
+    .select({
+      id: attachment.id,
+      dateiname: attachment.dateiname,
+      r2Key: attachment.r2Key,
+      art: attachment.art,
+    })
+    .from(attachment)
+    .where(eq(attachment.installationId, anlageId))
+    .orderBy(desc(attachment.createdAt))
+    .limit(20);
+}
+
 export default async function AnlagePage({ params }: PageProps<"/anlage/[qrToken]">) {
   const { qrToken } = await params;
   const anlage = await ladeAnlage(qrToken);
 
   if (!anlage) notFound();
+
+  const dateien = await ladeDateien(anlage.id);
 
   const ueberfaellig =
     anlage.naechsteWartungAm !== null && anlage.naechsteWartungAm < new Date();
@@ -101,6 +118,31 @@ export default async function AnlagePage({ params }: PageProps<"/anlage/[qrToken
         <Camera className="size-3.5" />
         Fotos werden direkt der Bauakte zugeordnet.
       </p>
+
+      {dateien.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Dokumente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2.5 text-sm">
+              {dateien.map((d) => (
+                <li key={d.id} className="flex items-center gap-2">
+                  <FileText className="text-muted-foreground size-4 shrink-0" />
+                  <a
+                    href={objectUrl(d.r2Key)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 flex-1 truncate underline-offset-4 hover:underline"
+                  >
+                    {d.dateiname}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

@@ -17,7 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { customer, getDb, installation, maintenanceJob, serviceReport, user } from "@/lib/db";
+import { attachment, customer, getDb, installation, maintenanceJob, serviceReport, user } from "@/lib/db";
+import { objectUrl } from "@/lib/r2";
 
 export const metadata: Metadata = { title: "Anlage" };
 export const dynamic = "force-dynamic";
@@ -87,6 +88,29 @@ async function ladeProtokolle(anlageId: string) {
     .limit(10);
 }
 
+const DATEI_ART_LABEL: Record<string, string> = {
+  foto: "Foto",
+  pdf: "PDF",
+  signatur: "Signatur",
+  sonstiges: "Datei",
+};
+
+/** Alle Dateien der Anlage aus R2 (Fotos, PDFs, Signaturen), neueste zuerst. */
+async function ladeDateien(anlageId: string) {
+  return getDb()
+    .select({
+      id: attachment.id,
+      dateiname: attachment.dateiname,
+      r2Key: attachment.r2Key,
+      art: attachment.art,
+      createdAt: attachment.createdAt,
+    })
+    .from(attachment)
+    .where(eq(attachment.installationId, anlageId))
+    .orderBy(desc(attachment.createdAt))
+    .limit(50);
+}
+
 export default async function AnlageDetailPage({ params }: PageProps<"/anlagen/[id]">) {
   const { id } = await params;
   const zeile = await ladeAnlage(id);
@@ -94,7 +118,11 @@ export default async function AnlageDetailPage({ params }: PageProps<"/anlagen/[
   if (!zeile) notFound();
 
   const { anlage } = zeile;
-  const [auftraege, protokolle] = await Promise.all([ladeAuftraege(id), ladeProtokolle(id)]);
+  const [auftraege, protokolle, dateien] = await Promise.all([
+    ladeAuftraege(id),
+    ladeProtokolle(id),
+    ladeDateien(id),
+  ]);
 
   const stammdaten: Array<[string, string]> = [
     ["Hersteller", anlage.hersteller ?? "–"],
@@ -277,7 +305,12 @@ export default async function AnlageDetailPage({ params }: PageProps<"/anlagen/[
                 {protokolle.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="whitespace-nowrap align-top">
-                      {dateFmt.format(p.durchgefuehrtAm)}
+                      <Link
+                        href={`/protokolle/${p.id}`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {dateFmt.format(p.durchgefuehrtAm)}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground min-w-0 align-top break-words whitespace-normal">
                       {p.taetigkeiten ?? "–"}
@@ -287,6 +320,53 @@ export default async function AnlageDetailPage({ params }: PageProps<"/anlagen/[
                     </TableCell>
                     <TableCell className="text-muted-foreground min-w-0 align-top break-words whitespace-normal">
                       {p.empfehlungen ?? "–"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-base font-semibold tracking-tight">Dokumente</h2>
+        {dateien.length === 0 ? (
+          <Card size="sm">
+            <CardContent>
+              <p className="text-muted-foreground text-sm">
+                Noch keine Dateien. Fotos aus der Bauakte und dem Protokoll landen automatisch hier.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="gap-0 py-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Datei</TableHead>
+                  <TableHead>Art</TableHead>
+                  <TableHead>Hochgeladen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dateien.map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell className="min-w-0 font-medium">
+                      <a
+                        href={objectUrl(d.r2Key)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="break-words underline-offset-4 hover:underline"
+                      >
+                        {d.dateiname}
+                      </a>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Badge variant="secondary">{DATEI_ART_LABEL[d.art] ?? d.art}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                      {dateFmt.format(d.createdAt)}
                     </TableCell>
                   </TableRow>
                 ))}

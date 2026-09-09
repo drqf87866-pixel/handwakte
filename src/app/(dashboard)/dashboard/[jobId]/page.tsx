@@ -224,7 +224,12 @@ export default async function AuftragDetailPage({ params }: PageProps<"/dashboar
                 {protokolle.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="whitespace-nowrap align-top">
-                      {dateFmt.format(p.durchgefuehrtAm)}
+                      <Link
+                        href={`/protokolle/${p.id}`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {dateFmt.format(p.durchgefuehrtAm)}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground min-w-0 align-top break-words whitespace-normal">
                       {p.taetigkeiten ?? "–"}

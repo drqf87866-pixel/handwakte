@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, asc, count, eq, ilike, inArray, lte, or } from "drizzle-orm";
+import { and, asc, count, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
 import { AlertTriangle, CalendarClock, ClipboardList } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { customer, getDb, installation, maintenanceJob, user } from "@/lib/db";
+import { berlinTagesEnde, berlinTagesStart, berlinWochenEnde } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Übersicht" };
 export const dynamic = "force-dynamic";
@@ -28,12 +29,16 @@ const STATUS_VARIANT = {
   ueberfaellig: "destructive",
   geplant: "secondary",
   terminiert: "outline",
+  erledigt: "outline",
+  storniert: "outline",
 } as const;
 
 const STATUS_LABEL: Record<string, string> = {
   ueberfaellig: "Überfällig",
   geplant: "Geplant",
   terminiert: "Terminiert",
+  erledigt: "Erledigt",
+  storniert: "Storniert",
 };
 
 function relativerAbstand(faelligAm: Date, jetzt: number): string {
@@ -49,16 +54,45 @@ const FILTER = [
   { wert: "geplant", label: "Geplant" },
   { wert: "terminiert", label: "Terminiert" },
   { wert: "ueberfaellig", label: "Überfällig" },
+  { wert: "erledigt", label: "Erledigt" },
+  { wert: "storniert", label: "Storniert" },
+] as const;
+
+const ZEITRAUM = [
+  { wert: "alle", label: "Alle" },
+  { wert: "heute", label: "Heute" },
+  { wert: "woche", label: "Diese Woche" },
 ] as const;
 
 const OFFENE_STATUS = ["geplant", "terminiert", "ueberfaellig"] as const;
+type AlleStatus = "geplant" | "terminiert" | "ueberfaellig" | "erledigt" | "storniert";
 
-/** Status- und Suchfilter als DB-Bedingung (Kunden- oder Anlagenname). */
-function filterBedingung(filter: string, q: string) {
-  const bedingungen = [inArray(maintenanceJob.status, [...OFFENE_STATUS])];
-  if (filter !== "alle") {
-    bedingungen.push(eq(maintenanceJob.status, filter as (typeof OFFENE_STATUS)[number]));
+/**
+ * Status-, Zeitraum- und Suchfilter als DB-Bedingung.
+ *
+ * "Alle" beim Status meint alle offenen Auftraege; erledigt/storniert sind
+ * als Historie einzeln waehlbar. Zeitraum "heute" zeigt alles, was heute
+ * dran ist (faellig bis Tagesende oder Termin heute), "woche" dasselbe bis
+ * Sonntag. Grenzen in Europe/Berlin, passend zur Anzeige.
+ */
+function filterBedingung(filter: string, zeitraum: string, q: string) {
+  const bedingungen = [
+    filter === "alle"
+      ? inArray(maintenanceJob.status, [...OFFENE_STATUS])
+      : eq(maintenanceJob.status, filter as AlleStatus),
+  ];
+
+  if (zeitraum === "heute" || zeitraum === "woche") {
+    const start = berlinTagesStart();
+    const ende = zeitraum === "heute" ? berlinTagesEnde() : berlinWochenEnde();
+    bedingungen.push(
+      or(
+        lte(maintenanceJob.faelligAm, ende),
+        and(gte(maintenanceJob.terminAm, start), lte(maintenanceJob.terminAm, ende)),
+      )!,
+    );
   }
+
   if (q) {
     const muster = `%${q}%`;
     const treffer = or(ilike(customer.name, muster), ilike(installation.bezeichnung, muster));
@@ -67,8 +101,8 @@ function filterBedingung(filter: string, q: string) {
   return and(...bedingungen);
 }
 
-/** Offene Wartungsaufträge, die der Cron-Lauf angelegt hat (eine Seite). */
-async function ladeOffeneAuftraege(filter: string, q: string, offset: number) {
+/** Wartungsaufträge des gewaehlten Filters (eine Seite). */
+async function ladeAuftraege(filter: string, zeitraum: string, q: string, offset: number) {
   return getDb()
     .select({
       id: maintenanceJob.id,
@@ -83,19 +117,19 @@ async function ladeOffeneAuftraege(filter: string, q: string, offset: number) {
     .innerJoin(installation, eq(installation.id, maintenanceJob.installationId))
     .innerJoin(customer, eq(customer.id, installation.customerId))
     .leftJoin(user, eq(user.id, maintenanceJob.monteurId))
-    .where(filterBedingung(filter, q))
+    .where(filterBedingung(filter, zeitraum, q))
     .orderBy(asc(maintenanceJob.faelligAm))
     .limit(SEITENGROESSE)
     .offset(offset);
 }
 
-async function zaehleOffeneAuftraege(filter: string, q: string) {
+async function zaehleAuftraege(filter: string, zeitraum: string, q: string) {
   const [zeile] = await getDb()
     .select({ anzahl: count() })
     .from(maintenanceJob)
     .innerJoin(installation, eq(installation.id, maintenanceJob.installationId))
     .innerJoin(customer, eq(customer.id, installation.customerId))
-    .where(filterBedingung(filter, q));
+    .where(filterBedingung(filter, zeitraum, q));
   return zeile?.anzahl ?? 0;
 }
 
@@ -131,9 +165,10 @@ async function ladeKennzahlen() {
   };
 }
 
-function dashboardHref(filter: string, q: string, seite: number) {
+function dashboardHref(filter: string, zeitraum: string, q: string, seite: number) {
   const params = new URLSearchParams();
   if (filter !== "alle") params.set("status", filter);
+  if (zeitraum !== "alle") params.set("zeitraum", zeitraum);
   if (q) params.set("q", q);
   if (seite > 1) params.set("seite", String(seite));
   const query = params.toString();
@@ -144,11 +179,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const params = await searchParams;
   const rohStatus = typeof params.status === "string" ? params.status : "alle";
   const filter = FILTER.some((f) => f.wert === rohStatus) ? rohStatus : "alle";
+  const rohZeitraum = typeof params.zeitraum === "string" ? params.zeitraum : "alle";
+  const zeitraum = ZEITRAUM.some((z) => z.wert === rohZeitraum) ? rohZeitraum : "alle";
   const q = typeof params.q === "string" ? params.q.trim() : "";
   const gewuenscht =
     typeof params.seite === "string" ? Number.parseInt(params.seite, 10) : 1;
 
-  let auftraege: Awaited<ReturnType<typeof ladeOffeneAuftraege>> = [];
+  let auftraege: Awaited<ReturnType<typeof ladeAuftraege>> = [];
   let gesamt = 0;
   let seite = 1;
   let seiten = 1;
@@ -157,12 +194,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   try {
     [gesamt, kennzahlenWerte] = await Promise.all([
-      zaehleOffeneAuftraege(filter, q),
+      zaehleAuftraege(filter, zeitraum, q),
       ladeKennzahlen(),
     ]);
     seiten = Math.max(1, Math.ceil(gesamt / SEITENGROESSE));
     seite = Number.isInteger(gewuenscht) && gewuenscht > 0 ? Math.min(gewuenscht, seiten) : 1;
-    auftraege = await ladeOffeneAuftraege(filter, q, (seite - 1) * SEITENGROESSE);
+    auftraege = await ladeAuftraege(filter, zeitraum, q, (seite - 1) * SEITENGROESSE);
   } catch (error) {
     // Ohne konfigurierte Datenbank soll die Seite trotzdem rendern.
     fehler = error instanceof Error ? error.message : String(error);
@@ -220,6 +257,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       <form method="get" action="/dashboard" className="flex flex-wrap gap-2">
         {filter !== "alle" ? <input type="hidden" name="status" value={filter} /> : null}
+        {zeitraum !== "alle" ? <input type="hidden" name="zeitraum" value={zeitraum} /> : null}
         <Input
           name="q"
           defaultValue={q}
@@ -231,7 +269,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </Button>
         {q ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link href={dashboardHref(filter, "", 1)}>Zurücksetzen</Link>
+            <Link href={dashboardHref(filter, zeitraum, "", 1)}>Zurücksetzen</Link>
           </Button>
         ) : null}
       </form>
@@ -244,7 +282,22 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             </Button>
           ) : (
             <Button key={wert} variant="outline" size="sm" asChild>
-              <Link href={dashboardHref(wert, q, 1)}>{label}</Link>
+              <Link href={dashboardHref(wert, zeitraum, q, 1)}>{label}</Link>
+            </Button>
+          ),
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-muted-foreground text-sm">Zeitraum:</span>
+        {ZEITRAUM.map(({ wert, label }) =>
+          zeitraum === wert ? (
+            <Button key={wert} variant="default" size="sm" disabled>
+              {label}
+            </Button>
+          ) : (
+            <Button key={wert} variant="outline" size="sm" asChild>
+              <Link href={dashboardHref(filter, wert, q, 1)}>{label}</Link>
             </Button>
           ),
         )}
@@ -260,9 +313,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         <Card size="sm">
           <CardContent>
             <p className="text-muted-foreground text-sm">
-              {gesamt === 0 && !q && filter === "alle"
+              {gesamt === 0 && !q && filter === "alle" && zeitraum === "alle"
                 ? "Aktuell keine offenen Wartungsaufträge. Sobald der tägliche Scan fällige Anlagen findet, erscheinen sie hier."
-                : "Keine Aufträge für diese Auswahl. Filter oder Suche zurücksetzen, um alle zu sehen."}
+                : "Keine Aufträge für diese Auswahl. Filter, Zeitraum oder Suche zurücksetzen, um alle zu sehen."}
             </p>
           </CardContent>
         </Card>
@@ -326,12 +379,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
               <div className="flex gap-2">
                 {seite > 1 ? (
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={dashboardHref(filter, q, seite - 1)}>Zurück</Link>
+                    <Link href={dashboardHref(filter, zeitraum, q, seite - 1)}>Zurück</Link>
                   </Button>
                 ) : null}
                 {seite < seiten ? (
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={dashboardHref(filter, q, seite + 1)}>Weiter</Link>
+                    <Link href={dashboardHref(filter, zeitraum, q, seite + 1)}>Weiter</Link>
                   </Button>
                 ) : null}
               </div>

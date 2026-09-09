@@ -180,13 +180,15 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   Einstieg ueber „Passwort vergessen?" auf der Login-Seite. Hinweis: ohne
   verifizierte Domain stellt Resend nur an die eigene Account-Adresse zu -
   im Dev-Betrieb kommt bei anderen Adressen real keine Mail an.
-- **Dashboard (`/dashboard`, `/dashboard/[jobId]`):** offene
-  Wartungsauftraege (`geplant`, `terminiert`, `ueberfaellig`), sortiert nach
-  Faelligkeit, 20 Zeilen je Seite mit Pagination, mit Statusfilter (Alle/Geplant/Terminiert/
-  Ueberfaellig) und Suche ueber Kunden- und Anlagennamen (`?q=`, `?seite=`).
+- **Dashboard (`/dashboard`, `/dashboard/[jobId]`):** Wartungsauftraege,
+  sortiert nach Faelligkeit, 20 Zeilen je Seite mit Pagination, mit Statusfilter
+  (Alle/Geplant/Terminiert/Ueberfaellig/Erledigt/Storniert - letztere beiden als
+  durchsuchbare Historie), Zeitraumfilter (Alle/Heute/Diese Woche, Grenzen in
+  Europe/Berlin via `berlinTagesStart()`/`berlinWochenEnde()` in `src/lib/dates.ts`)
+  und Suche ueber Kunden- und Anlagennamen (`?status=`, `?zeitraum=`, `?q=`, `?seite=`).
   Kennzahlen oben: Ueberfaellig, Faellig in 30 Tagen, Offen
   gesamt - per Count-Queries ueber alle offenen Auftraege, damit sie bei
-  Suche und Pagination nicht luegen. Relative Angaben wie "heute", "morgen", "in 10 Tagen", "seit 3 Tagen".
+  Filter, Suche und Pagination nicht luegen. Relative Angaben wie "heute", "morgen", "in 10 Tagen", "seit 3 Tagen".
   Auftraege legt der taegliche Scan in `src/lib/jobs/maintenance.ts` an
   (30 Tage Vorlauf, idempotent). Die Detailseite zeigt Termin, Monteur, Notiz
   und Protokolle zum Auftrag und bietet zwei Server Actions in
@@ -207,9 +209,17 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   Kundenname, Standort, Ort) und Pagination (20 je Seite). `qrToken` wird per
   `generateQrToken()` erzeugt und bleibt nach dem Anlegen unveraenderlich (der
   Aufkleber klebt bereits). `/anlagen/[id]/qr` ist die Druckansicht fuer den
-  Aufkleber. Es gibt keinen Loesch-Endpunkt - stattdessen Deaktivieren via
+  Aufkleber. Die Anlagendetailseite zeigt zusaetzlich eine Dokumentenliste
+  (alle R2-Dateien der Anlage: Fotos, PDFs, Signaturen, neueste zuerst, max. 50).
+  Es gibt keinen Loesch-Endpunkt - stattdessen Deaktivieren via
   `aktiv`-Flag: inaktive Anlagen fallen aus dem Wartungs-Scan, Historie bleibt
   erhalten.
+- **Serviceprotokoll (`/protokolle/[id]`):** Detailseite je Report (Messwerte,
+  Taetigkeiten/Maengel/Empfehlungen, Fotos, Dateien, Unterschrift) mit
+  Druckansicht fuer Ablage und Kunden (`DruckButton` -> `window.print()`,
+  `@media print`-CSS blendet Navigation und Buttons aus, Vorlage wie beim
+  QR-Aufkleber). Verlinkt aus den Protokoll-Tabellen (Anlage, Auftrag) sowie
+  zurueck zu Anlage und Auftrag.
 - **Folgetermin (Anlage-Formular):** bleibt `naechste_wartung_am` beim
   Speichern leer, wird es aus `letzte_wartung_am` + `wartungsintervall_monate`
   berechnet - sonst faende der Scan die Anlage nie. Ein eingetragener Wert
@@ -219,7 +229,8 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   `/protokoll/neu?installation=...`):** QR-Scan per Kamera (`QrScanner`:
   nativ per BarcodeDetector, jsQR-Fallback fuer Safari/iPhone, manuelle
   Token-Eingabe als Ausweg; fremde QR-Codes werden ignoriert), Anlagendetail
-  mit direktem Foto-Upload,   Protokollformular mit Messwerten (Abgastemp.,
+  mit direktem Foto-Upload und Dokumentenliste (neueste 20 Dateien),
+  Protokollformular mit Messwerten (Abgastemp.,
   CO2, Druck - Komma-Eingabe wird normalisiert), Arbeitszeit, Taetigkeiten,
   Maengeln, Empfehlungen (z. B. Angebotshinweise), Fotos und Unterschrift. Das Absenden laeuft ueber die Server
   Action `protokollAbschliessen` in `src/app/(mobile)/protokoll/actions.ts`:
@@ -295,8 +306,11 @@ src/
     (dashboard)/            Buero-Ansichten (Session-Guard im Layout)
       profil/               Konto-Info, Passwortwechsel, Abmelden (ProfilInhalt;
                               eine Route fuer beide Layouts)
-      dashboard/            Offene Wartungen (Liste + Filter), [jobId] (Detail,
+      dashboard/            Offene Wartungen (Liste mit Status-/Zeitraumfilter,
+                            Suche, Pagination), [jobId] (Detail,
                             Termin, Storno) + actions.ts
+      protokolle/[id]       Serviceprotokoll-Detail mit Druckansicht
+                            (Messwerte, Fotos, Unterschrift) + druck-button.tsx
       kunden/               Liste, neu, [id], [id]/bearbeiten + actions.ts
       anlagen/              Liste, neu, [id], [id]/bearbeiten, [id]/qr + actions.ts
     (mobile)/               Monteur-Ansichten (eigenes Layout + Bottom-Nav)
@@ -327,7 +341,8 @@ src/
     actions.ts              ActionState, Feldfehler, Unique-Erkennung (Server Actions)
     auth.ts                 Better-Auth-Instanz (lazy)
     auth-client.ts          Client-Hooks
-    dates.ts                addMonths() fuer Folgetermine
+    dates.ts                addMonths() fuer Folgetermine, berlinTagesStart/Ende,
+                            berlinWochenStart/Ende fuer den Zeitraumfilter
     db/                     Neon + Drizzle (index.ts, schema.ts mit 9 Tabellen)
     email.ts                Resend-Client und Mail-Templates
     r2.ts                   Bucket-Helper ueber env.MY_BUCKET

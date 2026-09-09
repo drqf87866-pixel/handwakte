@@ -119,7 +119,9 @@ Drei Karten zeigen auf einen Blick:
 
 ### 3.2 Tabelle der Aufträge
 
-Über der Tabelle stehen vier Filter-Schaltflächen: **Alle**, **Geplant**, **Terminiert**, **Überfällig**. Damit grenzen Sie die Liste ein, ohne dass die Kennzahlen oben sich ändern.
+Über der Tabelle stehen sechs Filter-Schaltflächen: **Alle**, **Geplant**, **Terminiert**, **Überfällig**, **Erledigt**, **Storniert**. Damit grenzen Sie die Liste ein, ohne dass die Kennzahlen oben sich ändern. **Erledigt** und **Storniert** sind die Historie: abgeschlossene Aufträge bleiben lesbar, statt zu verschwinden.
+
+Darunter steht die Zeile **„Zeitraum:"** mit **Alle**, **Heute** und **Diese Woche**: **Heute** zeigt alles, was heute dran ist (fällig bis Tagesende oder Termin heute — Überfälliges inklusive), **Diese Woche** dasselbe bis Sonntag. Lässt sich mit Status und Suche kombinieren — z. B. „Terminiert + Diese Woche" für den Wochenplan.
 
 Darunter steht die Tabelle mit den Spalten:
 
@@ -152,7 +154,7 @@ Darunter finden Sie die Karte **„Termin vergeben"**:
 
 Ganz unten steht bei offenen Aufträgen die Karte zum **Stornieren** (z. B. bei Doppelanlage oder beendeter Betreuung): Nach der Rückfrage „Auftrag wirklich stornieren?" steht der Auftrag auf **Storniert**. Er bleibt in der Anlagen-Historie sichtbar, zählt aber nicht mehr als offen — ist die Wartung weiterhin fällig, legt der tägliche Scan beim nächsten Lauf einen neuen Auftrag an.
 
-Erledigte und stornierte Aufträge lassen sich nicht mehr terminieren oder stornieren; die Seite zeigt dann stattdessen einen Hinweis. Ganz unten stehen die **Protokolle zu diesem Auftrag**.
+Erledigte und stornierte Aufträge lassen sich nicht mehr terminieren oder stornieren; die Seite zeigt dann stattdessen einen Hinweis. Ganz unten stehen die **Protokolle zu diesem Auftrag** — klicken Sie auf das Datum, um das Protokoll im Detail zu öffnen (siehe Kapitel 9.6).
 
 ### 3.4 Sonderfälle
 
@@ -309,7 +311,9 @@ Darunter sehen Sie zwei Karten:
 Ganz unten stehen zwei Verläufe (jeweils die letzten 10 Einträge):
 
 - **Wartungsaufträge** mit Fällig, Termin, Monteur und Status (**Überfällig**, **Geplant**, **Terminiert**, **Erledigt**, **Storniert**). Das Fälligkeitsdatum ist anklickbar und führt zur Auftragsdetailseite (siehe Kapitel 3.3). Auf schmalen Bildschirmen werden zuerst Termin und Monteur ausgeblendet, damit kein horizontales Scrollen noetig ist. Gibt es noch keine, steht dort: „Noch keine Aufträge. Der tägliche Scan legt sie an, sobald die nächste Wartung innerhalb des Vorlaufs liegt."
-- **Protokolle** mit Durchgeführt, Tätigkeiten, Mängeln und Empfehlungen. Gibt es noch keine, steht dort: „Noch keine Serviceprotokolle erfasst."
+- **Protokolle** mit Durchgeführt, Tätigkeiten, Mängeln und Empfehlungen. Gibt es noch keine, steht dort: „Noch keine Serviceprotokolle erfasst." Klicken Sie auf das Datum, um ein Protokoll im Detail zu öffnen — mit Messwerten, Fotos, Unterschrift und Druckfunktion (siehe Kapitel 9.6).
+
+Ganz unten steht die Liste **„Dokumente"**: alle Dateien dieser Anlage (Fotos aus Bauakte und Protokollen, PDFs, Signaturen), neueste zuerst. Klick öffnet die Datei in einem neuen Tab.
 
 Ist die Anlage deaktiviert, erscheint zusätzlich der Hinweis: „Diese Anlage ist deaktiviert und wird vom täglichen Wartungs-Scan übersprungen."
 
@@ -400,6 +404,10 @@ Darunter steht zur Bestätigung: „Fotos werden direkt der Bauakte zugeordnet."
 
 Fotos lassen sich sowohl hier als auch direkt im Protokoll aufnehmen — sie landen in beiden Fällen bei derselben Anlage.
 
+### 8.3 Dokumente vor Ort öffnen
+
+Unter den Aktionen finden Sie die Karte **„Dokumente"** mit den neuesten Dateien der Anlage (Fotos, PDFs). Tippen Sie einen Eintrag an, um ihn zu öffnen — praktisch, wenn Sie vor Ort ein Typenschild-Foto oder ein früheres Protokoll-Bild nachschlagen wollen. Ohne Empfang stehen nur zwischengespeicherte Seiten zur Verfügung (siehe Kapitel 9.5).
+
 ---
 
 ## 9. Monteur: Serviceprotokoll ausfüllen
@@ -474,6 +482,12 @@ Sobald Empfang besteht, gibt es drei Wege zum Einspielen — alle führen zum se
 Nach erfolgreichem Sync verhält sich alles wie in Kapitel 9.4 beschrieben (Bericht abgelegt, Auftrag erledigt, Folgetermin fortgeschrieben, E-Mail ans Büro bzw. den Kunden). **Schlägt ein Eintrag fehl** (z. B. wurde der Auftrag inzwischen im Büro storniert), bleibt er mit der genauen Meldung in der **Sync**-Liste stehen — nichts geht verloren. Tippen Sie dann erneut auf **„Jetzt synchronisieren"** (ggf. nach Rücksprache mit dem Büro).
 
 Bitte beachten Sie: Abmelden leert den Seiten-Zwischenspeicher auf dem Gerät (geteilte Geräte!). Offene Sync-Einträge selbst bleiben erhalten und werden nach der nächsten Anmeldung eingespielt — im Büro sichtbar ist aber erst, was synchronisiert wurde. Synchronisieren Sie deshalb möglichst **vor** dem Abmelden.
+
+### 9.6 Protokoll im Büro lesen und drucken
+
+Jedes abgeschlossene Protokoll hat eine eigene Seite (`/protokolle/…`). Sie erreichen sie im Büro über das **Datum** in den Protokoll-Tabellen (Anlagendetail → Protokolle, Auftragsdetail → Protokolle zu diesem Auftrag). Dort stehen Messwerte, Tätigkeiten, Mängel, Empfehlungen, Fotos, Dateien und Unterschrift mit Namen an einem Ort — oben mit Rücksprung zu Anlage und Auftrag.
+
+Über **„Drucken / PDF"** drucken Sie das Protokoll für Ablage und Kunden: Es wird nur das Protokoll-Blatt gedruckt (Navigation und Schaltflächen werden automatisch ausgeblendet). Zum Als-PDF-Sichern wählen Sie im Druckdialog Ihres Browsers „Als PDF speichern".
 
 ---
 
