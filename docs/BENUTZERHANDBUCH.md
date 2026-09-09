@@ -49,6 +49,17 @@ Die Startseite der Anwendung fragt Sie daher zuerst: **„Anlage scannen"** (fü
 
 Ihre Zugangsdaten erhalten Sie von Ihrem Administrator. Es gibt keine Selbstregistrierung in der Anwendung.
 
+### 2.1b Passwort vergessen
+
+Kommen Sie gar nicht mehr hinein, klicken Sie auf der Anmeldeseite auf **„Passwort vergessen?"**:
+
+1. Geben Sie Ihre **E-Mail-Adresse** ein und klicken Sie auf **„Link anfordern"**.
+2. Sie erhalten eine Mail mit einem Link (gilt 1 Stunde, nur einmal nutzbar). Hinweis: Aus Sicherheitsgründen erscheint diese Bestätigung immer — auch wenn Sie sich bei der Adresse vertippt haben. Dann kommt schlicht keine Mail an.
+3. Öffnen Sie den Link und vergeben Sie zweimal Ihr **neues Passwort** (mindestens 8 Zeichen).
+4. Melden Sie sich mit dem neuen Passwort an. Waren Sie noch auf anderen Geräten angemeldet, sind diese dabei abgemeldet worden — melden Sie sich dort einfach neu an.
+
+Ist der Link abgelaufen oder wurde er schon benutzt, erscheint ein Hinweis — fordern Sie einfach einen neuen an. Kommt gar keine Mail an, prüfen Sie den Spam-Ordner und die Schreibweise der Adresse.
+
 ### 2.1a Profil, Passwort und Abmelden
 
 Oben rechts in der Kopfzeile sehen Sie nur noch Ihr **Benutzer-Icon** (Kreis mit Ihrem Anfangsbuchstaben). Klicken Sie darauf, um Ihre **Profil-Seite** (`/profil`) zu öffnen. Dort finden Sie an einem Ort:
@@ -491,7 +502,7 @@ Was das für Sie bedeutet:
 
 **Anmeldung schlägt fehl.**
 
-Prüfen Sie E-Mail-Schreibweise und Passwort. Nach einem falschen Versuch erscheint eine Fehlermeldung über dem Formular. Kommen Sie gar nicht mehr hinein (Passwort vergessen), wenden Sie sich an Ihren Administrator (neues Passwort vergeben lassen) — solange Sie noch angemeldet sind, können Sie es stattdessen selbst unter **„Passwort"** in der Kopfzeile ändern (siehe Kapitel 2.1a).
+Prüfen Sie E-Mail-Schreibweise und Passwort. Nach einem falschen Versuch erscheint eine Fehlermeldung über dem Formular. Kommen Sie gar nicht mehr hinein, nutzen Sie **„Passwort vergessen?"** auf der Anmeldeseite (siehe Kapitel 2.1b) — solange Sie noch angemeldet sind, ändern Sie es stattdessen auf Ihrer **Profil-Seite** (Benutzer-Icon in der Kopfzeile, siehe Kapitel 2.1a).
 
 **Ich werde auf die Anmeldeseite zurückgeworfen.**
 
@@ -544,6 +555,10 @@ Drucken Sie über die Browser-Druckfunktion von der Seite **„QR-Aufkleber"** a
 **E-Mail über fällige Wartung kommt nicht an.**
 
 Prüfen Sie Spam-Ordner und ob das richtige Büropostfach hinterlegt ist. Hinweis für den Administrator: Ohne verifizierte Absender-Domain stellt der E-Mail-Dienst nur an die eigene Konto-Adresse zu — Mails an Kundenadressen brauchen erst eine verifizierte Domain.
+
+**Reset-Mail („Passwort vergessen") kommt nicht an.**
+
+Prüfen Sie Spam-Ordner und die Schreibweise der eingegebenen Adresse — aus Sicherheitsgründen erscheint die Bestätigung immer, auch bei vertippter Adresse (dann kommt schlicht keine Mail). Der Link gilt nur 1 Stunde und nur einmal. Für den Administrator gilt derselbe Domain-Hinweis wie oben.
 
 ---
 

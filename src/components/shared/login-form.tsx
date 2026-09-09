@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Flame } from "lucide-react";
 import { toast } from "sonner";
@@ -80,6 +81,11 @@ export function LoginForm() {
           <Button type="submit" disabled={pending} className="mt-1 w-full" size="lg">
             {pending ? "Wird geprüft …" : "Anmelden"}
           </Button>
+          <p className="text-muted-foreground text-center text-xs">
+            <Link href="/passwort-vergessen" className="underline underline-offset-4">
+              Passwort vergessen?
+            </Link>
+          </p>
         </form>
       </CardContent>
     </Card>

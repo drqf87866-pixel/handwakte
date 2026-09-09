@@ -170,6 +170,16 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   direkt im Formular (`PasswortForm`, `authClient` wie beim Login); andere
   Sitzungen werden dabei abgemeldet (`revokeOtherSessions`). Einstieg ueber
   das User-Icon in der Kopfzeile - sichtbar im Buero- wie im Monteur-Layout.
+- **Passwort vergessen (`/passwort-vergessen`, `/neues-passwort`):**
+  Reset-Link per Mail (Better-Auth-Flow: `requestPasswordReset` /
+  `resetPassword`, Token einmalig nutzbar, 1 Stunde gueltig, Ablage in der
+  bestehenden `verification`-Tabelle). Die Antwort ist bei unbekannter
+  Adresse identisch erfolgreich (kein Aufzaehlen von Konten), der Versand
+  laeuft best effort ueber Resend (`sendPasswordResetEmail`) und meldet
+  andere Geraete nach dem Reset ab (`revokeSessionsOnPasswordReset`).
+  Einstieg ueber „Passwort vergessen?" auf der Login-Seite. Hinweis: ohne
+  verifizierte Domain stellt Resend nur an die eigene Account-Adresse zu -
+  im Dev-Betrieb kommt bei anderen Adressen real keine Mail an.
 - **Dashboard (`/dashboard`, `/dashboard/[jobId]`):** offene
   Wartungsauftraege (`geplant`, `terminiert`, `ueberfaellig`), sortiert nach
   Faelligkeit, maximal 50 Zeilen, mit Statusfilter (Alle/Geplant/Terminiert/
@@ -275,6 +285,8 @@ src/
   app/
     page.tsx                Landing: Wahl zwischen Scan und Dashboard
     (auth)/login            Login
+    (auth)/passwort-vergessen   Reset-Link anfordern (ohne Session-Guard)
+    (auth)/neues-passwort       Reset-Link einloesen (Token aus der Mail)
     (dashboard)/            Buero-Ansichten (Session-Guard im Layout)
       profil/               Konto-Info, Passwortwechsel, Abmelden (ProfilInhalt;
                               eine Route fuer beide Layouts)
@@ -303,8 +315,9 @@ src/
     mobile/                 qr-scanner, camera-capture, signature-pad, protokoll-form,
                             sync-liste
     shared/                 Header, Sidebar, Mobile-Nav, Login-Formular, Sign-out,
-                            Passwort-Formular, Profil-Inhalt, Sw-Register,
-                            Auto-Sync, Offline-Banner, Offline-Hooks
+                            Passwort-Formular, Profil-Inhalt, Reset-Formulare,
+                            Sw-Register, Auto-Sync, Offline-Banner,
+                            Offline-Hooks
   lib/
     actions.ts              ActionState, Feldfehler, Unique-Erkennung (Server Actions)
     auth.ts                 Better-Auth-Instanz (lazy)

@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 
 import { getDb } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export type AppRole = "admin" | "buero" | "monteur";
 
@@ -42,6 +43,20 @@ function createAuth() {
       disableSignUp: true,
       requireEmailVerification: false,
       minPasswordLength: 8,
+      // Reset-Link gilt 1 Stunde, danach braucht es eine neue Anforderung.
+      resetPasswordTokenExpiresIn: 3600,
+      // Wie beim eingeloggten Wechsel (revokeOtherSessions): nach einem
+      // Reset sind alle anderen Geraete abgemeldet.
+      revokeSessionsOnPasswordReset: true,
+      async sendResetPassword({ user, url }) {
+        // Mail ist best effort (Konvention wie beim Protokollversand):
+        // Ein Mailausfall darf nicht verraten, ob die Adresse existiert.
+        try {
+          await sendPasswordResetEmail({ to: user.email, url });
+        } catch (fehler) {
+          console.error("Passwort-Reset-Mail fehlgeschlagen:", fehler);
+        }
+      },
     },
 
     user: {
