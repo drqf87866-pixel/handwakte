@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/**/*": ["./src/lib/**/*"],
   },
+  // Alte Route (vor /profil): Lesezeichen und alte Doku laufen weiter.
+  async redirects() {
+    return [{ source: "/passwort", destination: "/profil", permanent: true }];
+  },
 };
 
 export default nextConfig;
