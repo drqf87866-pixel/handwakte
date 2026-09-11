@@ -273,6 +273,12 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
 
 ## Deployment
 
+Deploys laufen automatisch ueber die Cloudflare-GitHub-Integration: Jeder Push
+auf `main` loest einen Produktions-Deploy des Workers aus. Der unten
+beschriebene manuelle Weg (`pnpm run deploy`) ist nur noch fuer Sonderfaelle.
+Secrets (Datenbank-URL, API-Keys, ...) muessen weiterhin per Hand gesetzt
+werden - das erledigt die Integration nicht.
+
 ```bash
 pnpm exec wrangler secret put DATABASE_URL
 pnpm exec wrangler secret put BETTER_AUTH_SECRET

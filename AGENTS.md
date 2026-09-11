@@ -55,6 +55,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Gotchas (hard rules, all verified against the code)
 
+- **Push auf main ist ein Produktions-Deploy.** Die Cloudflare-GitHub-Integration
+  deployed bei jedem Push auf `main` automatisch. Kein Push ohne ausdrueckliche
+  Freigabe; ein Commit allein (ohne Push) deployt nichts.
 - **Stale `.next` route types.** The global `PageProps<"…">` helper validates
   against the generated route manifest. If `tsc` reports a route as not
   satisfying `AppRoutes` even though the page file exists, the manifest is
