@@ -135,6 +135,7 @@ pnpm dev        # Next.js Dev-Server, Bindings inklusive (localhost:3000)
 pnpm preview    # OpenNext-Build + echte Workers-Runtime (localhost:8787)
 pnpm typecheck
 pnpm lint
+pnpm test        # Vitest: Protokoll-Abschluss und Wartungs-Scan
 pnpm user:create -- --email=... --name="..."   # Konto anlegen, siehe Benutzer anlegen
 ```
 
