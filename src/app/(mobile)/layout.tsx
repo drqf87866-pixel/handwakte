@@ -3,6 +3,9 @@ import { AutoSync } from "@/components/shared/auto-sync";
 import { MobileNav } from "@/components/shared/mobile-nav";
 import { requireSession } from "@/lib/session";
 
+// Layout enthaelt requireSession(), das zur Build-Zeit auf die DB zugreift
+export const dynamic = "force-dynamic";
+
 /** Mobile-first Shell für den Monteur: schmale Spalte, Navigation unten. */
 export default async function MobileLayout({ children }: LayoutProps<"/">) {
   const session = await requireSession("/scan");
