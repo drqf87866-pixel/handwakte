@@ -26,6 +26,7 @@ hier in `README.md`.
 | UI | Tailwind CSS v4 + shadcn/ui |
 | Validierung | Zod (Server Actions) |
 | QR Druck | `qrcode` (Druckansicht `/anlagen/[id]/qr`) |
+| PDF | `pdf-lib` (Serviceprotokoll serverseitig, reines JS ohne Canvas/native Module) |
 | QR Scan | `BarcodeDetector` nativ (Chrome/Edge/Android) + `jsqr`-Fallback (Safari/iPhone) + manuelle Token-Eingabe |
 | PWA | Manifest + hand-rolled `public/sw.js` (Shell-Precache, Network-First fuer Bauakte), IndexedDB-Outbox mit `/sync` |
 
@@ -219,7 +220,17 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/main
   Druckansicht fuer Ablage und Kunden (`DruckButton` -> `window.print()`,
   `@media print`-CSS blendet Navigation und Buttons aus, Vorlage wie beim
   QR-Aufkleber). Verlinkt aus den Protokoll-Tabellen (Anlage, Auftrag) sowie
-  zurueck zu Anlage und Auftrag.
+  zurueck zu Anlage und Auftrag. Zusaetzlich als echtes PDF:
+  "PDF herunterladen" ruft `GET /api/protokolle/[id]/pdf` auf (Session-Pflicht,
+  404 ohne Protokoll, Dateiname `protokoll-<kundennummer>-<YYYY-MM-DD>.pdf`),
+  "Als PDF an Kunden senden" die Server Action `protokollPdfSenden` in
+  `src/app/(dashboard)/protokolle/actions.ts` (Rueckfrage mit Zieladresse,
+  Resend-Anhang). Beide nutzen `src/lib/protokoll-pdf.ts` (Kopfdaten,
+  Messwerte, Textbloecke, Unterschrift als Bild mit Name/Datum; Fotos bleiben
+  aussen vor, damit die Mail klein bleibt). Ohne Kunden-E-Mail meldet die
+  Action "Keine E-Mail beim Kunden hinterlegt"; ein Resend-Fehler wird nur
+  geloggt und als nicht bestaetigte Zustellung gemeldet (best effort wie beim
+  Protokoll-Abschluss).
 - **Folgetermin (Anlage-Formular):** bleibt `naechste_wartung_am` beim
   Speichern leer, wird es aus `letzte_wartung_am` + `wartungsintervall_monate`
   berechnet - sonst faende der Scan die Anlage nie. Ein eingetragener Wert
@@ -311,6 +322,7 @@ src/
                             Termin, Storno) + actions.ts
       protokolle/[id]       Serviceprotokoll-Detail mit Druckansicht
                             (Messwerte, Fotos, Unterschrift) + druck-button.tsx
+      protokolle/actions.ts protokollPdfSenden (PDF per Mail an den Kunden)
       kunden/               Liste, neu, [id], [id]/bearbeiten + actions.ts
       anlagen/              Liste, neu, [id], [id]/bearbeiten, [id]/qr + actions.ts
     (mobile)/               Monteur-Ansichten (eigenes Layout + Bottom-Nav)
@@ -324,6 +336,7 @@ src/
       cron/maintenance      Wartungs-Scan als HTTP-Endpunkt (GET/POST, Bearer CRON_SECRET)
       upload                Proxy-Upload nach R2 + Metadaten in Postgres
       sync/protokoll        Outbox-Abschluss (JSON, Session-Pflicht, selber Kern)
+      protokolle/[id]/pdf   Serviceprotokoll als PDF-Download (Session-Pflicht)
       files/[...key]        geschuetzte Auslieferung aus R2
       health                Verbindungstest aller Dienste
   components/
@@ -352,6 +365,8 @@ src/
     jobs/maintenance.ts     taeglicher Wartungs-Scan (VORLAUF_TAGE = 30)
     protokoll-abschluss.ts  Abschluss-Kern (Report, Verknuepfung, Folgetermin),
                             genutzt von Server Action und Sync-Route
+    protokoll-pdf.ts        Protokoll-PDF (pdf-lib), genutzt von PDF-Route und
+                            protokollPdfSenden
     offline/                db (IndexedDB-Outbox), bilder (Komprimierung),
                             upload (Upload-Helfer), sync (Sync-Engine, Client)
   types/index.ts            UploadResult, HealthResponse, AuftragMitKontext, ...
@@ -381,6 +396,12 @@ scripts/send-test-email.mts Resend-Test ohne DB/Dev-Server
   und jeder koennte sich ein `monteur`-Konto und damit Zugriff auf alle
   Kundendaten anlegen. Konten kommen aus `scripts/create-user.mts`, das dafuer
   eine eigene Auth-Instanz mit offenem Sign-up baut.
+- **PDF mit `pdf-lib`, kein Headless-Browser.** Die Worker-Runtime hat weder
+  Chromium noch Canvas; pdf-lib ist reines JavaScript und laeuft im
+  OpenNext-Bundle unveraendert. Preis: kein HTML/CSS-Layout, Umbruch und
+  Seitenwechsel stehen von Hand in `src/lib/protokoll-pdf.ts`. Die
+  Standardschrift kann nur WinAnsi (Umlaute ja, Emojis nein) - andere Zeichen
+  aus Freitext werden ersetzt statt das PDF abzubrechen.
 - **Lazy Clients.** `getDb()`, `getAuth()` und `getResend()` bauen ihre Instanz
   erst beim ersten Zugriff auf, damit fehlende Env-Variablen als sauberer
   Fehler in `/api/health` landen statt beim Modul-Import.

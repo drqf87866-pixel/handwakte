@@ -311,7 +311,7 @@ Darunter sehen Sie zwei Karten:
 Ganz unten stehen zwei Verläufe (jeweils die letzten 10 Einträge):
 
 - **Wartungsaufträge** mit Fällig, Termin, Monteur und Status (**Überfällig**, **Geplant**, **Terminiert**, **Erledigt**, **Storniert**). Das Fälligkeitsdatum ist anklickbar und führt zur Auftragsdetailseite (siehe Kapitel 3.3). Auf schmalen Bildschirmen werden zuerst Termin und Monteur ausgeblendet, damit kein horizontales Scrollen noetig ist. Gibt es noch keine, steht dort: „Noch keine Aufträge. Der tägliche Scan legt sie an, sobald die nächste Wartung innerhalb des Vorlaufs liegt."
-- **Protokolle** mit Durchgeführt, Tätigkeiten, Mängeln und Empfehlungen. Gibt es noch keine, steht dort: „Noch keine Serviceprotokolle erfasst." Klicken Sie auf das Datum, um ein Protokoll im Detail zu öffnen — mit Messwerten, Fotos, Unterschrift und Druckfunktion (siehe Kapitel 9.6).
+- **Protokolle** mit Durchgeführt, Tätigkeiten, Mängeln und Empfehlungen. Gibt es noch keine, steht dort: „Noch keine Serviceprotokolle erfasst." Klicken Sie auf das Datum, um ein Protokoll im Detail zu öffnen — mit Messwerten, Fotos, Unterschrift, Druckfunktion sowie PDF-Download und PDF-Versand an den Kunden (siehe Kapitel 9.6).
 
 Ganz unten steht die Liste **„Dokumente"**: alle Dateien dieser Anlage (Fotos aus Bauakte und Protokollen, PDFs, Signaturen), neueste zuerst. Klick öffnet die Datei in einem neuen Tab.
 
@@ -489,6 +489,16 @@ Jedes abgeschlossene Protokoll hat eine eigene Seite (`/protokolle/…`). Sie er
 
 Über **„Drucken / PDF"** drucken Sie das Protokoll für Ablage und Kunden: Es wird nur das Protokoll-Blatt gedruckt (Navigation und Schaltflächen werden automatisch ausgeblendet). Zum Als-PDF-Sichern wählen Sie im Druckdialog Ihres Browsers „Als PDF speichern".
 
+**PDF herunterladen:** Die Schaltflaeche **"PDF herunterladen"** laedt das Protokoll direkt als fertige PDF-Datei herunter, ohne Druckdialog (Dateiname z. B. `protokoll-k-1001-2026-09-11.pdf`). Das PDF enthaelt Kopfdaten (Kunde, Kundennummer, Anlage, Standort, Datum, Monteur), die Messwerte, Taetigkeiten, Maengel und Empfehlungen sowie die Unterschrift mit Name und Datum. Fotos stehen nicht im PDF - sie bleiben in der Bauakte und auf der Protokollseite.
+
+**Als PDF an Kunden senden:** Mit **"Als PDF an Kunden senden"** geht dasselbe PDF als Mail-Anhang an die E-Mail-Adresse, die beim Kunden hinterlegt ist:
+
+1. Klicken Sie auf **"Als PDF an Kunden senden"**.
+2. Bestaetigen Sie die Rueckfrage "Protokoll als PDF an ... senden?" - dort sehen Sie die Zieladresse. Waehrenddessen steht auf der Schaltflaeche "Wird gesendet...".
+3. Ergebnis: Unten erscheint "Protokoll als PDF an ... gesendet."
+
+Ist beim Kunden **keine E-Mail-Adresse hinterlegt**, wird nichts versendet und es erscheint "Keine E-Mail beim Kunden hinterlegt. Bitte zuerst beim Kunden eintragen." Tragen Sie die Adresse dann unter **Kunden -> Kunde -> "Bearbeiten"** ein (Kapitel 4.4) und senden Sie erneut. Meldet die Anwendung stattdessen "PDF erstellt, Zustellung an ... aber nicht bestaetigt", hat der E-Mail-Dienst den Versand nicht quittiert - siehe Kapitel 12.
+
 ---
 
 ## 10. Üben mit Demo-Daten
@@ -591,6 +601,10 @@ Drucken Sie über die Browser-Druckfunktion von der Seite **„QR-Aufkleber"** a
 **E-Mail über fällige Wartung kommt nicht an.**
 
 Prüfen Sie Spam-Ordner und ob das richtige Büropostfach hinterlegt ist. Hinweis für den Administrator: Ohne verifizierte Absender-Domain stellt der E-Mail-Dienst nur an die eigene Konto-Adresse zu — Mails an Kundenadressen brauchen erst eine verifizierte Domain.
+
+**Protokoll-PDF kommt beim Kunden nicht an.**
+
+Pruefen Sie die E-Mail-Adresse beim Kunden (Kapitel 4.3) und bitten Sie den Kunden, im Spam-Ordner nachzusehen. Erschien "Zustellung ... nicht bestaetigt", hat der E-Mail-Dienst den Versand abgelehnt - fuer den Administrator gilt derselbe Domain-Hinweis wie oben. Bis dahin koennen Sie das PDF ueber **"PDF herunterladen"** speichern und selbst weitergeben.
 
 **Reset-Mail („Passwort vergessen") kommt nicht an.**
 

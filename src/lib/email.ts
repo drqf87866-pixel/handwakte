@@ -186,3 +186,42 @@ export async function sendServiceReportEmail(input: ServiceReportMail) {
     ),
   });
 }
+
+export type ServiceReportPdfMail = {
+  to: string | string[];
+  kunde: string;
+  anlage: string;
+  durchgefuehrtAm: Date;
+  dateiname: string;
+  pdf: Uint8Array;
+};
+
+/**
+ * Serviceprotokoll als PDF-Anhang an den Kunden (manuell aus dem Buero).
+ * Resend nimmt Anhaenge als Base64; das Protokoll ohne Fotos (wenige KB plus
+ * Signatur) bleibt weit unter dem Groessenlimit je Mail.
+ */
+export async function sendServiceReportPdfEmail(input: ServiceReportPdfMail) {
+  const rows: Array<[string, string]> = [
+    ["Anlage", input.anlage],
+    ["Durchgefuehrt am", dateFmt.format(input.durchgefuehrtAm)],
+  ];
+
+  return send({
+    from: getFrom(),
+    to: input.to,
+    subject: `Serviceprotokoll: ${input.anlage}`,
+    html: layout(
+      `Serviceprotokoll - ${input.kunde}`,
+      rows,
+      "anbei erhalten Sie das Serviceprotokoll zur Wartung Ihrer Anlage als PDF.",
+    ),
+    attachments: [
+      {
+        filename: input.dateiname,
+        content: Buffer.from(input.pdf).toString("base64"),
+        contentType: "application/pdf",
+      },
+    ],
+  });
+}

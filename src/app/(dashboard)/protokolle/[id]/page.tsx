@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
+import { Download } from "lucide-react";
 
 import { DruckButton } from "@/app/(dashboard)/protokolle/[id]/druck-button";
+import { protokollPdfSenden } from "@/app/(dashboard)/protokolle/actions";
+import { ActionButton } from "@/components/dashboard/action-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +45,7 @@ async function ladeProtokoll(id: string) {
       anlage: installation.bezeichnung,
       kundeId: customer.id,
       kunde: customer.name,
+      kundeEmail: customer.email,
       monteur: user.name,
     })
     .from(serviceReport)
@@ -124,6 +128,24 @@ export default async function ProtokollDetailPage({ params }: PageProps<"/protok
         </div>
         <div className="flex flex-wrap gap-2">
           <DruckButton />
+          <Button variant="outline" asChild>
+            <a href={`/api/protokolle/${report.id}/pdf`} download>
+              <Download />
+              PDF herunterladen
+            </a>
+          </Button>
+          {/* Ohne Kunden-E-Mail keine Rueckfrage - die Action meldet dann,
+              dass keine Adresse hinterlegt ist. */}
+          <ActionButton
+            action={protokollPdfSenden.bind(null, report.id)}
+            label="Als PDF an Kunden senden"
+            pendingLabel="Wird gesendet..."
+            confirm={
+              zeile.kundeEmail?.trim()
+                ? `Protokoll als PDF an ${zeile.kundeEmail.trim()} senden?`
+                : undefined
+            }
+          />
           <Button variant="outline" asChild>
             <Link href={`/anlagen/${zeile.anlageId}`}>Zur Anlage</Link>
           </Button>
